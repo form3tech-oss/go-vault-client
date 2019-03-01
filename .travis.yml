@@ -1,0 +1,42 @@
+language: go
+go:
+- 1.11.x
+cache:
+  directories:
+  - "$HOME/docker"
+env:
+  global:
+  - AWS_REGION=eu-west-1
+  - AWS_TEST_ROLE_ARN=arn:aws:iam::288840537196:role/go-vault-client-test-role
+  - SECSCAN_IMAGE=288840537196.dkr.ecr.eu-west-1.amazonaws.com/tech.form3/secscan-go:latest
+  - secure: pSuLiq65Oc4D6/VxYp/FmmZKzHGlmgX0Gae73XMhT0J9jPmcI7JR957O9f524hMf5xlmW/x9zkhqY7gz4jyeY+mjLm38ltOrtMqmlNxLImyecAypHEfnVHr7j8+BJZE9s+ctoAhJEjo33DYZB9yxFOrKR0jWVpJTq0ATGg/PBIL5KT4uD2mYTMF5OR2Kxkt3D9tYrbDFV4hBwEVKUK7G40s2GpXZKsFgzubXJF78zI4sBulo1I6+o8Egj9BXI8Fa1iI5k5B+3gf34ni00BYoyjQ5JHWs83m4q3Nz1bLq2E6hW9ijo252bSQgGCKY7nxw8swUsHcCaMZHhC/qvUrmVal/eqZ/UTEoXOyhd+GvmmA2CUWztvR0LW2Wc7nnNr52wDR2o1K24VLlvFomiYwVLfO2u1tksXLSrMdl6ZyfX0JwXsaMwcHiXClFOD0W4IwMDsep7VF6DBjML173LYWTYW0BfGdAUNLHKrLsMYjTKLk01xt5Kn0FF47RPPnOZX41gMk9Qv106vElDHT7TxGUvHjG+UrRQftvlBSxpOxoGlKVZE+fG+ca3/hVxPd7zwXJljYs7ddSjrFCHvsziJgGIk//j6JTPDn8hC5B2uC6zwYHzZHLtxSn1EiCd6p76M4r5993wrpsXDIZujpnwFjE3Om5Mtd1leQp6JyN3aCsRj4=
+  - secure: kk4TK6fl/GiK8r9aODN9j7SvsQH/pUHp6XyASQcyw+fZkd3pTb7JHnu+vnaf2MM8s81KWWIvBGduvVVQKjtOc94F+7qJ8mavRd1D51mYimyvk2Kn6IogY2Tg05J2Iel9E3csRsYgWzPVUApsOR48TSD9WvKzI4no2h6Tft8rkqg/rYd0E+ZyBZ4Zke98Gc5tosBO1prOqirMkUQnPeG/Ty4F3iiKZ/yWBzrFXTLTBb6p85qN9ATYk4c/SneORh39SqmXFVOQjnMbunjK+u1iAK+1tT/bGh4cgTAeMecfs8o6PDnQRXp3FhinEDpwc7erLLOkkUdbX/hnBf9FE3/BfpyGCx8rJ4k1ixXsxIHnfChrotYzTh3NZhoLbj+K6AqQA89W2RZtP6B43U9cqWafFfBt1w4Vu/9l2JC8zEANEi8B5e6xOjEbUl03SqCH7AyyYB1aMH+e7Wah/HOaSNGa1rgnVFI4DfgxJYoCgV9EPUg0bghbxn28yIEBZSf76JXkmBNAbNxtkHuzn9eVg3wyTThUbk1BW9CoRcxajkNV/WBzB6MGcogHTi7GK1fLNVUh+Y0Lqe5hkwIY9BdOaih0TETltjuQ9/tOmphTXxRDZ+VUJw+X3v59Gg/1CAtc41uwLcC6/OhOb3XmbyefDUU+x2ZrP02NZ6MtYGqui546Skk=
+  - secure: R9VDNh1ab8kC2NamkdzcRxalPZpOUIopbquhzxd6ezdzSTSXp3GsTbD/mumYMvh9kuqmBqRbQl2XO2JSjR7To5OH1acF6ZHplgER7a7ALW2PDVY1qswaB7nrLRVBr1/tYnudozSkePwC//+K7uO92KvQEM41ii7aqFeotYf6KTOOcb3fd9BieuaXNyiUv9CDCCKC/51kYJ3gz0WjlyCh8Gmg3be5fhsQr0izcJITXRAzoBkVKWbUSk/jIz7wE45Qu8fIzueYdEm5Cq0SDxh+xI2FDzDgo13glbyEU9NIz7zbniJhs9pHWRIbgxQWoOhOe4tFMsK0DTJlHXPJbfgcAKWODWTqXS4hXItXIT4bL3TpOtyJMS0Ewx76YGYfx5mTSYuP+XaGvHmd3DFehjYUeOtYSS/8uykTxQZ3tGPL0yi71iFM7sm8tIPJHxYVxbZUizOn+EX2NjebOa1+vSPnX6QnduPPvYgbTui1a5fX2IQFgpAdq8b82gwmgqKTXgzkQqtEN8L6vKnoF0NpnCf7gQelPiIzm+j6M+ZWqJ1vn4mZb7a5DXp+Nl61L3JPiHYCPnCqOYcw7OGz6QKtaSn8MZJgkoR0Xv6M9l5A+7coDExNWFZQCsn1M8bHa572rIe/+EtIvrMJm31VscVDNNEh8SumrmT3ynU6ha4keywR/fY=
+  - secure: ocaeOF++nlpZnNzt/uM4xnvlU4uql1Fr69fMA1JGOEDI7nTfZbJAei9EwblEV4p8smwPaksR3svtD/rLFnJYAs5e8bHfiGh5khpGo94H3lACBRdmPbjidgrZIwxdft/uaautLIiphvuFLW1CefS0D1m9RW4v/JY4zw0tGw5NZoadlB8x5WiG0xJJvi/6ejggGfykwObCTPC5nbFp3PXACxB5cwZKwtRD9I5c+PtLO9TPjGYeSxHiR5PMn2CjkgXpP4w7oCCRiW3ulGc1bJbTOxsBx4tjkJUd7X1U7016/fw3x8v1j6gXXxhoWW2bojJNucSw3bpyVaCvv+mSo6Q/QYgdETyq9PI+SPqUn2FXf4Zk0NW3PsBS3fPwFYNm+whxU4YSE93q3s4vzeZ9wc+SflmieJAviQUiJ8YnDUeaHDVnF6Kkfh8N0KLvZtoQH+BNZwymwe1U7ES9EtV4FjcFg9wD4F+TF4U0KnyIfndkVdUT5f0hdlxdOjPBDhuG7C5UsJdWM4ucBLvjXPhTJ8HY81BgpTrGB653/ynrgKfs9kvS0IpsKYnn8nBMIqqiJ0exg5RJRz9TT9tS8u3QKd+ItHK+2qyuWfeW1xzIQhRrP4/X5BPAdburw/I7FQU4pl2C7Buh81XGHSpA8+Wmx0szVF9VEfYJb0TBbcv0xAy4LOg=
+  - secure: OqfRI/+0TX6iLpNmZ+FPNvBzwyCj8GXvXspLti4W7NIAd451RqHnFmgAMMA+sHdckn3gXcPrlQNSFGiM+PNyZMPpGxkrKWu2gxzxBrVinoR8qbVhd2VP5uGHV4YfRtCI1kK1yhkihoEKKSA95Oga445O05MAn91FzBIBYKuWHZ82Sdshf7ne91CnFqpCjBePT26hss9B8f5kcxuhZTRa3pBZ/AUr7QJiizfbh+uCxSHmldCWjovnBdUf3MPgJhoJQcqGrUFAU+VjaYsWC5SkHzGxkFCaUH0iOi+qc0RfCOMat0r+gDKapNwer84fiucxZ1zJdMSBz/Av48+fjjYXdlFzlvUayoZXAu7DQZ9z68ea+/HwTJIM6j293vpceybuZAd/zeBAaG3eiBMrdb413ISO2Z23Rm7hBL/gLS9dIxG6RYiH+BNTFEvRIJTb8PSPB8ADDcLaQMQWuznHomkLo0hXfn3K+R0E+2PynKmdChxYY3tVfJ72oEw8SfYtfKXNunKSTIEuqTNx03sAUgSwPEuwZT4n3fVdce+NkgfhD7vGg4dPi2F3xOgOD6M+YJLTZkEqKcd7c3zpTXTr5NZEt4YigxMkyevGW3cc5Sr0pl4HAO3oDI4qw7mVHQecDV9zWbDrQfqWub35lXPHOnSmlXTgztvJtzH+YhQbX3Ira24=
+jobs:
+  include:
+  - stage: test
+    name: Run Go tests
+    install:
+    - pip install --user awscli
+    - go get golang.org/x/tools/cmd/goimports
+    script:
+    - make
+  - stage: test
+    name: Run Security Scans
+    before_cache:
+    - 'mkdir -p $HOME/docker && docker images -a --filter=''dangling=false'' --format
+      ''{{.Repository}}:{{.Tag}} {{.ID}}'' | xargs -n 2 -t sh -c ''test -e $HOME/docker/$1.tar.gz
+      || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz''
+
+'
+    before_install:
+    - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh
+      -c "zcat {file} | docker load"; fi
+    install:
+    - sudo pip install awscli
+    script:
+    - eval $(aws ecr get-login --region eu-west-1 --no-include-email)
+    - docker run --rm -v $(pwd):/code -e TRAVIS -e SNYK_TOKEN -e REPO=$TRAVIS_REPO_SLUG
+      $SECSCAN_IMAGE
