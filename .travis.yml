@@ -40,16 +40,5 @@ jobs:
     - eval $(aws ecr get-login --region eu-west-1 --no-include-email)
     - docker run --rm -v $(pwd):/code -e TRAVIS -e SNYK_TOKEN -e REPO=$TRAVIS_REPO_SLUG
       $SECSCAN_IMAGE
-  - stage: publish
-    name: Publish
-    install:
-    - sudo pip install awscli
-    script:
-    - make release
-    - make publish
-    - 'aws sns publish --region "us-east-1" --topic-arn "arn:aws:sns:us-east-1:288840537196:build_completed"
-      --message "{\"branch\": \"$([[ "$TRAVIS_PULL_REQUEST" != "false" ]] && echo
-      "PULL-REQUEST" || echo $TRAVIS_BRANCH)\", \"service_name\": \"$TRAVIS_REPO_SLUG\",
-      \"version\": \"$TRAVIS_BUILD_NUMBER\", \"git_sha\": \"$TRAVIS_COMMIT\" }"
 
 '
