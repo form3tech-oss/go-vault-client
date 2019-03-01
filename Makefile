@@ -4,10 +4,7 @@ platform := $(shell uname)
 
 GOFMT_FILES?=$$(find ./ -name '*.go' | grep -v vendor)
 
-default: install-deps build test
-
-build:
-	@find ./cmd/* -maxdepth 1 -type d -exec go install "{}" \;
+default: install-deps test
 
 install-deps: install-goimports
 
@@ -18,7 +15,7 @@ install-goimports:
 
 test:
 	@echo "executing tests..."
-	@go test -count 1 -v -timeout 20m github.com/form3tech-oss/pkg/vaultclient
+	@go test -count 1 -v -timeout 20m github.com/form3tech-oss/go-vault-client/pkg/vaultclient
 
 vet:
 	@echo "go vet ."
