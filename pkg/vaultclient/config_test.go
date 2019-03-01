@@ -18,7 +18,7 @@ func TestDefaultConfigWhenTokenSpecified(t *testing.T) {
 }
 
 func TestDefaultConfigWhenRoleSpecified(t *testing.T) {
-	defer setEnv("VAULT_IAM_ROLE", "foo")()
+	defer setEnv("VAULT_ROLE", "foo")()
 	config := NewDefaultConfig()
 
 	if !strings.EqualFold("foo", config.IamRole) {

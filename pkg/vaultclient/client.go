@@ -56,7 +56,7 @@ func NewDefaultConfig() *Config {
 		}
 	}
 
-	role := os.Getenv("VAULT_IAM_ROLE")
+	role := os.Getenv("VAULT_ROLE")
 	if role != "" {
 		return &Config{
 			AuthType: Iam,
