@@ -39,7 +39,7 @@ type Auth struct {
 }
 
 var (
-	expirationWindow = time.Duration(10) * time.Second
+	expirationWindow = time.Second * 10
 )
 
 type VaultAuth interface {
@@ -69,12 +69,10 @@ func NewDefaultConfig() *Config {
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 	config := api.DefaultConfig()
-	err := config.ConfigureTLS(&api.TLSConfig{Insecure: cfg.Insecure})
-	if err != nil {
+	if err := config.ConfigureTLS(&api.TLSConfig{Insecure: cfg.Insecure}); err != nil {
 		return nil, err
 	}
 	c, err := api.NewClient(config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -93,10 +91,8 @@ func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 }
 
 func (v *iamAuth) getAuth() (*Auth, error) {
-
 	s := session.Must(session.NewSession())
 	data, err := awsauth.GenerateLoginData(s.Config.Credentials, "")
-
 	if err != nil {
 		return nil, nil
 	}
