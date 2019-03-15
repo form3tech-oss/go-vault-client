@@ -3,6 +3,7 @@ package cert
 import (
 	"context"
 	"crypto/rand"
+	"github.com/hashicorp/go-sockaddr"
 	"net/http"
 
 	"golang.org/x/net/http2"
@@ -26,7 +27,7 @@ import (
 	"github.com/hashicorp/vault/api"
 	vaulthttp "github.com/hashicorp/vault/http"
 
-	"github.com/hashicorp/go-rootcerts"
+	rootcerts "github.com/hashicorp/go-rootcerts"
 	"github.com/hashicorp/vault/builtin/logical/pki"
 	"github.com/hashicorp/vault/helper/certutil"
 	"github.com/hashicorp/vault/logical"
@@ -840,7 +841,7 @@ func TestBackend_CertWrites(t *testing.T) {
 	}
 
 	tc := logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "aaa", ca1, "foo", allowed{}, false),
 			testAccStepCert(t, "bbb", ca2, "foo", allowed{}, false),
@@ -863,7 +864,7 @@ func TestBackend_basic_CA(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{}, false),
 			testAccStepLogin(t, connState),
@@ -898,7 +899,7 @@ func TestBackend_Basic_CRLs(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCertNoLease(t, "web", ca, "foo"),
 			testAccStepLoginDefaultLease(t, connState),
@@ -923,7 +924,7 @@ func TestBackend_basic_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{}, false),
 			testAccStepLogin(t, connState),
@@ -948,7 +949,7 @@ func TestBackend_common_name_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{}, false),
 			testAccStepLogin(t, connState),
@@ -977,7 +978,7 @@ func TestBackend_ext_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{ext: "2.1.1.1:A UTF8String Extension"}, false),
 			testAccStepLogin(t, connState),
@@ -1032,7 +1033,7 @@ func TestBackend_dns_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{dns: "example.com"}, false),
 			testAccStepLogin(t, connState),
@@ -1063,7 +1064,7 @@ func TestBackend_email_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{emails: "valid@example.com"}, false),
 			testAccStepLogin(t, connState),
@@ -1094,7 +1095,7 @@ func TestBackend_organizationalUnit_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{organizational_units: "engineering"}, false),
 			testAccStepLogin(t, connState),
@@ -1123,7 +1124,7 @@ func TestBackend_uri_singleCert(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "web", ca, "foo", allowed{uris: "spiffe://example.com/*"}, false),
 			testAccStepLogin(t, connState),
@@ -1151,7 +1152,7 @@ func TestBackend_mixed_constraints(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepCert(t, "1unconstrained", ca, "foo", allowed{}, false),
 			testAccStepCert(t, "2matching", ca, "foo", allowed{names: "*.example.com,whatever"}, false),
@@ -1172,7 +1173,7 @@ func TestBackend_untrusted(t *testing.T) {
 		t.Fatalf("error testing connection state: %v", err)
 	}
 	logicaltest.Test(t, logicaltest.TestCase{
-		Backend: testFactory(t),
+		CredentialBackend: testFactory(t),
 		Steps: []logicaltest.TestStep{
 			testAccStepLoginInvalid(t, connState),
 		},
@@ -1200,6 +1201,7 @@ func TestBackend_validCIDR(t *testing.T) {
 	}
 
 	name := "web"
+	boundCIDRs := []string{"127.0.0.1", "128.252.0.0/16"}
 
 	addCertReq := &logical.Request{
 		Operation: logical.UpdateOperation,
@@ -1211,7 +1213,7 @@ func TestBackend_validCIDR(t *testing.T) {
 			"allowed_names":       "",
 			"required_extensions": "",
 			"lease":               1000,
-			"bound_cidrs":         []string{"127.0.0.1/32", "128.252.0.0/16"},
+			"bound_cidrs":         boundCIDRs,
 		},
 		Storage:    storage,
 		Connection: &logical.Connection{ConnState: &connState},
@@ -1220,6 +1222,21 @@ func TestBackend_validCIDR(t *testing.T) {
 	_, err = b.HandleRequest(context.Background(), addCertReq)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	readCertReq := &logical.Request{
+		Operation:  logical.ReadOperation,
+		Path:       "certs/" + name,
+		Storage:    storage,
+		Connection: &logical.Connection{ConnState: &connState},
+	}
+
+	readResult, err := b.HandleRequest(context.Background(), readCertReq)
+	cidrsResult := readResult.Data["bound_cidrs"].([]*sockaddr.SockAddrMarshaler)
+
+	if cidrsResult[0].String() != boundCIDRs[0] ||
+		cidrsResult[1].String() != boundCIDRs[1] {
+		t.Fatalf("bound_cidrs couldn't be set correctly, EXPECTED: %v, ACTUAL: %v", boundCIDRs, cidrsResult)
 	}
 
 	loginReq := &logical.Request{

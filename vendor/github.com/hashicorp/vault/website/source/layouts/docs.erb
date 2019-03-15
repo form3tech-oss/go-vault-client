@@ -66,6 +66,7 @@
                   'google-cloud-storage',
                   'in-memory',
                   'manta',
+                  'mssql',
                   'mysql',
                   'postgresql',
                   's3',
@@ -104,6 +105,7 @@
             },
             'list',
             'login',
+            'namespace',
             {
               category: 'operator',
               content: [
@@ -119,7 +121,6 @@
               ]
             },
             'path-help',
-            'namespace',
             {
               category: 'plugin',
               content: [
@@ -177,17 +178,18 @@
                     category: 'methods',
                     content: [
                       'alicloud',
+                      'approle',
                       'aws',
                       'azure',
                       'gcp',
                       'jwt',
                       'kubernetes'
                     ]
+                  }, {
+                    category: 'sinks',
+                    content: ['file']
                   }
                 ]
-              }, {
-                category: 'sinks',
-                content: ['file']
               }
             ]
           },
@@ -205,6 +207,7 @@
                 category: 'databases',
                 content: [
                   'cassandra',
+                  'influxdb',
                   'hanadb',
                   'mongodb',
                   'mssql',
@@ -215,6 +218,7 @@
                 ]
               },
               { category: 'gcp' },
+              { category: 'gcpkms' },
               {
                 category: 'kv',
                 content: ['kv-v1','kv-v2']
@@ -279,6 +283,9 @@
             category: 'use-cases',
           },
           {
+            category: 'partnerships'
+          },
+          {
             category: 'vs',
             content: [
               'chef-puppet-etc',
@@ -312,18 +319,16 @@
               'upgrade-to-0.10.2',
               'upgrade-to-0.10.4',
               'upgrade-to-0.11.0',
-              'upgrade-to-0.11.2'
+              'upgrade-to-0.11.2',
+              'upgrade-to-0.11.6',
+              'upgrade-to-1.0.0'
             ]
-          },
-          {
-            category: 'partnerships'
           },
           '----------------',
           {
             category: 'enterprise',
             content: [
               { category: 'replication' },
-              { category: 'auto-unseal' },
               {
                 category: 'hsm',
                 content: ['behavior', 'security']

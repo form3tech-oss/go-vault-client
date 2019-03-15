@@ -28,6 +28,7 @@
     - api/secret/cubbyhole/index.html
     - api/secret/databases/index.html
     - api/secret/gcp/index.html
+    - api/secret/gcpkms/index.html
     - api/secret/kv/index.html
     - api/secret/identity/index.html
     - api/secret/nomad/index.html
@@ -54,6 +55,7 @@
     - api/system/generate-root.html
     - api/system/health.html
     - api/system/init.html
+    - api/system/internal-specs-openapi.html
     - api/system/internal-ui-mounts.html
     - api/system/key-status.html
     - api/system/leader.html

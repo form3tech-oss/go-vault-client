@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/vault/api"
+	credAppRole "github.com/hashicorp/vault/builtin/credential/approle"
 	vaultaws "github.com/hashicorp/vault/builtin/credential/aws"
 	"github.com/hashicorp/vault/helper/logging"
 	vaulthttp "github.com/hashicorp/vault/http"
@@ -90,13 +91,66 @@ func newVaultConfiguredForIamAuth(t *testing.T, leaseTtl, maxLeaseTtl string) (*
 
 }
 
+func newVaultConfiguredForAppRole(t *testing.T, leaseTtl, maxLeaseTtl string) (*configuredVault, func()) {
+	logger := logging.NewVaultLogger(hclog.Trace)
+	coreConfig := &vault.CoreConfig{
+		DisableMlock: true,
+		DisableCache: true,
+		Logger:       logger,
+		CredentialBackends: map[string]logical.Factory{
+			"approle": credAppRole.Factory,
+		},
+	}
+	cluster := vault.NewTestCluster(t, coreConfig, &vault.TestClusterOptions{
+		HandlerFunc: vaulthttp.Handler,
+	})
+	cluster.Start()
+
+	vault.TestWaitActive(t, cluster.Cores[0].Core)
+	client := cluster.Cores[0].Client
+	deferFunc := func() {
+		cluster.Cleanup()
+	}
+
+	err := client.Sys().EnableAuthWithOptions("approle", &api.EnableAuthOptions{
+		Type: "approle",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = client.Logical().Write("auth/approle/role/test1", map[string]interface{}{
+		"bind_secret_id": "true",
+		"token_ttl":      leaseTtl,
+		"token_max_ttl":  maxLeaseTtl,
+		"policies":       "testapppolicy",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	policy := `
+	path "secret/baz" {
+  		capabilities = ["read", "create"]
+	}
+`
+	if err := client.Sys().PutPolicy("testapppolicy", policy); err != nil {
+		t.Fatal(err)
+	}
+
+	return &configuredVault{
+		address:    client.Address(),
+		rootToken:  client.Token(),
+		rootClient: client,
+	}, deferFunc
+}
+
 func newVault(t *testing.T) (*configuredVault, func()) {
 	logger := logging.NewVaultLogger(hclog.Trace)
 	coreConfig := &vault.CoreConfig{
-		Logger: logger,
-		CredentialBackends: map[string]logical.Factory{
-			"aws": vaultaws.Factory,
-		},
+		DisableMlock: true,
+		DisableCache: true,
+		Logger:       logger,
 	}
 	cluster := vault.NewTestCluster(t, coreConfig, &vault.TestClusterOptions{
 		HandlerFunc: vaulthttp.Handler,

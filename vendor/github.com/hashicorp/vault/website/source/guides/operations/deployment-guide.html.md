@@ -6,7 +6,7 @@ description: |-
   This deployment guide covers the steps required to install and
   configure a single HashiCorp Vault cluster as defined in the
   Vault Reference Architecture
-product_version: 0.11
+product_version: 1.0
 ---
 
 # Vault Deployment Guide
@@ -107,6 +107,7 @@ ProtectHome=read-only
 PrivateTmp=yes
 PrivateDevices=yes
 SecureBits=keep-caps
+AmbientCapabilities=CAP_IPC_LOCK
 Capabilities=CAP_IPC_LOCK+ep
 CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
 NoNewPrivileges=yes
@@ -136,9 +137,9 @@ The following parameters are set for the `[Service]` stanza:
 
 - [`User`, `Group`](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#User=) - Run vault as the vault user
 - [`ProtectSystem`, `ProtectHome`, `PrivateTmp`, `PrivateDevices`](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Sandboxing) - Sandboxing settings to improve the security of the host by restricting vault privileges and access
-- [`SecureBits`, `Capabilities`, `CapabilityBoundingSet`](http://man7.org/linux/man-pages/man7/capabilities.7.html) - Configure the capabilities of the vault process
+- [`SecureBits`, `Capabilities`, `CapabilityBoundingSet`, `AmbientCapabilities`](http://man7.org/linux/man-pages/man7/capabilities.7.html) - Configure the capabilities of the vault process
 - [`NoNewPrivileges`](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#NoNewPrivileges=) - Prevent vault and any child process from gaining new privileges
-- [`ExecStart`](https://www.freedesktop.org/software/systemd/man/systemd.service.html#ExecStart=) - Start vault with the `server` argument and path to the configuration file  
+- [`ExecStart`](https://www.freedesktop.org/software/systemd/man/systemd.service.html#ExecStart=) - Start vault with the `server` argument and path to the configuration file
 - [`ExecReload`](https://www.freedesktop.org/software/systemd/man/systemd.service.html#ExecReload=) - Send vault a HUP signal to trigger a configuration reload in vault
 - [`KillMode`](https://www.freedesktop.org/software/systemd/man/systemd.kill.html#KillMode=) - Treat vault as a single process
 - [`KillSignal`](https://www.freedesktop.org/software/systemd/man/systemd.kill.html#KillSignal=) - Send SIGINT signal when shutting down vault
@@ -209,7 +210,7 @@ listener "tcp" {
 
 The following parameters are set for the `tcp` listener stanza:
 
-- [`address`](/docs/configuration/listener/tcp.html#address) `(string: "127.0.0.1:8200")` – Changing from the loopback address to allow external access to the Vault UI
+- [`address`](/docs/configuration/listener/tcp.html#address) `(string: "127.0.0.1:8200")` - Changing from the loopback address to allow external access to the Vault UI
 - [`tls_cert_file`](/docs/configuration/listener/tcp.html#tls_cert_file) `(string: <required-if-enabled>, reloads-on-SIGHUP)` - Must be set when using TLS
 - [`tls_key_file`](/docs/configuration/listener/tcp.html#tls_key_file) `(string: <required-if-enabled>, reloads-on-SIGHUP)` - Must be set when using TLS
 
@@ -262,6 +263,20 @@ The following parameters are set for the `consul` storage stanza:
 The `telemetry` stanza specifies various configurations for Vault to publish metrics to upstream systems.
 
 If you decide to configure Vault to publish telemtery data, you should review the [telemetry configuration section](/docs/configuration/telemetry.html) of our documentation.
+
+### High Availability Parameters
+
+The `api_addr` parameter configures the API address used in high availability scenarios, when client redirection is used instead of request forwarding. Client redirection is the fallback method used when request forwarding is turned off or there is an error performing the forwarding. As such, a redirect address is always required for all HA setups.
+
+This parameter value defaults to the `address` specified in the `listener` stanza, but Vault will log a `[WARN]` message if it is not explicitly configured.
+
+Add the below configuration to the Vault configuration file:
+
+```hcl
+api_addr = "{{ full URL to Vault API endpoint }}"
+```
+
+[More information about high availability configuration](/docs/configuration/#high-availability-parameters).
 
 ### Vault UI
 

@@ -1,17 +1,17 @@
 ---
 layout: "docs"
 page_title: "policy - Command"
-sidebar_title: "policy"
+sidebar_title: "<code>policy</code>"
 sidebar_current: "docs-commands-policy"
 description: |-
   The "policy" command groups subcommands for interacting with policies. Users
-  can Users can write, read, and list policies in Vault.
+  can write, read, and list policies in Vault.
 ---
 
 # policy
 
 The `policy` command groups subcommands for interacting with policies. Users can
-Users can write, read, and list policies in Vault.
+write, read, and list policies in Vault.
 
 For more information, please see the [policy
 documentation](/docs/concepts/policies.html).

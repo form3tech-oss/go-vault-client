@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-cleanhttp"
+	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/vault/helper/consts"
 	"github.com/hashicorp/vault/helper/jsonutil"
 )
@@ -105,6 +105,7 @@ func testHttpData(t *testing.T, method string, token string, addr string, body i
 }
 
 func testResponseStatus(t *testing.T, resp *http.Response, code int) {
+	t.Helper()
 	if resp.StatusCode != code {
 		body := new(bytes.Buffer)
 		io.Copy(body, resp.Body)

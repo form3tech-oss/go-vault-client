@@ -30,10 +30,14 @@ func TestDefaultConfigWhenIamRoleSpecified(t *testing.T) {
 }
 
 func TestDefaultConfigWhenAppRoleSpecified(t *testing.T) {
+	defer setEnv("VAULT_APP_ROLE", "testrole")()
 	defer setEnv("VAULT_APP_ROLE_ID", "myroleid")()
 	defer setEnv("VAULT_APP_SECRET_ID", "mysecretid")()
 	config := NewDefaultConfig()
 
+	if !strings.EqualFold("testrole", config.AppRole) {
+		t.Fatalf("expected app role to be testrole but was %s", config.AppRole)
+	}
 	if !strings.EqualFold("myroleid", config.AppRoleId) {
 		t.Fatalf("expected app role id to be myroleid but was %s", config.AppRoleId)
 	}

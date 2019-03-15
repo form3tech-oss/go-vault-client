@@ -674,6 +674,12 @@ tokens created against a role to be revoked using the
   current role value at each usage; it is set on the token itself. Root tokens
   with no TTL will not be bound by these CIDRs; root tokens with TTLs will be
   bound by these CIDRs.
+- `token_type` `(string: "")` – Specifies the type of tokens that should be
+  returned by the role. If either `service` or `batch` is specified, that kind
+  of token will always be returned. If `default-service`, `service` tokens will
+  be returned unless the client requests a `batch` type token at token creation
+  time. If `default-batch`, `batch` tokens will be returned unless the client
+  requests a `service` type token at token creation time.
 
 ### Sample Payload
 

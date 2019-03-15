@@ -10,6 +10,7 @@
 /docs/config/index.html /docs/configuration
 /docs/configuration/storage/google-cloud.html  /docs/configuration/storage/google-cloud-storage
 /docs/configuration/storage/spanner.html /docs/configuration/storage/google-cloud-spanner
+/docs/enterprise/auto-unseal/index.html /docs/concepts/seal.html
 /docs/enterprise/hsm/configuration.html  /docs/configuration/seal/pkcs11
 /docs/enterprise/ui/index.html  /docs/configuration/ui
 /docs/guides/generate-root.html /guides/operations/generate-root
@@ -44,6 +45,7 @@
 /guides/upgrading/upgrade-to-0.10.4.html /docs/upgrading/upgrade-to-0.10.4
 /guides/upgrading/upgrade-to-0.11.0.html /docs/upgrading/upgrade-to-0.11.0
 /guides/upgrading/upgrade-to-0.11.2.html /docs/upgrading/upgrade-to-0.11.2
+/guides/upgrading/upgrade-to-1.0.html /docs/upgrading/upgrade-to-1.0.0
 /docs/http/sys-audit.html /api/system/audit
 /docs/http/sys-auth.html  /api/system/auth
 /docs/http/sys-health.html  /api/system/health
@@ -121,6 +123,7 @@
 /guides/operations/multi-tenant.html            https://learn.hashicorp.com/vault/operations/namespaces
 /guides/operations/autounseal-aws-kms.html      https://learn.hashicorp.com/vault/operations/ops-autounseal-aws-kms
 /guides/operations/seal-wrap.html               https://learn.hashicorp.com/vault/operations/ops-seal-wrap
+/guides/operations/monitoring.html              https://learn.hashicorp.com/vault/operations/monitoring
 
 # Identity
 /guides/identity/index.html                     https://learn.hashicorp.com/vault?track=identity-access-management#identity-access-management
@@ -129,7 +132,7 @@
 /guides/identity/policy-templating.html         https://learn.hashicorp.com/vault/identity-access-management/policy-templating
 /guides/identity/authentication.html            https://learn.hashicorp.com/vault/identity-access-management/iam-authentication
 /guides/identity/approle-trusted-entities.html  https://learn.hashicorp.com/vault/identity-access-management/iam-approle-trusted-entities
-/guides/identity/lease.html                     https://learn.hashicorp.com/vault/secrets-management/sm-lease
+/guides/identity/lease.html                     https://learn.hashicorp.com/vault/secrets-management/tokens
 /guides/identity/identity.html                  https://learn.hashicorp.com/vault/identity-access-management/iam-identity
 /guides/identity/sentinel.html                  https://learn.hashicorp.com/vault/identity-access-management/iam-sentinel
 /guides/identity/control-groups.html            https://learn.hashicorp.com/vault/identity-access-management/iam-control-groups
@@ -164,4 +167,18 @@
 /intro/vs/keywhiz.html /docs/vs/keywhiz
 /intro/vs/kms.html /docs/vs/kms
 /intro/what-is-vault/index.html /docs/what-is-vault
-/intro/getting-started/install.html https://learn.hashicorp.com/vault/getting-started/install
+
+# Intro getting started content -> Learn
+/intro/index.html https://learn.hashicorp.com/vault/#getting-started
+/intro/getting-started/ https://learn.hashicorp.com/vault/getting-started/install
+/intro/getting-started/index.html https://learn.hashicorp.com/vault/getting-started/install
+/intro/getting-started/dev-server.html https://learn.hashicorp.com/vault/getting-started/dev-server
+/intro/getting-started/first-secret.html https://learn.hashicorp.com/vault/getting-started/first-secret
+/intro/getting-started/secrets-engines.html https://learn.hashicorp.com/vault/getting-started/secrets-engines
+/intro/getting-started/dynamic-secrets.html https://learn.hashicorp.com/vault/getting-started/dynamic-secrets
+/intro/getting-started/help.html https://learn.hashicorp.com/vault/getting-started/help
+/intro/getting-started/authentication.html https://learn.hashicorp.com/vault/getting-started/authentication
+/intro/getting-started/policies.html https://learn.hashicorp.com/vault/getting-started/policies
+/intro/getting-started/deploy.html https://learn.hashicorp.com/vault/getting-started/deploy
+/intro/getting-started/apis.html https://learn.hashicorp.com/vault/getting-started/apis
+/intro/getting-started/next-steps.html https://learn.hashicorp.com/vault/getting-started/next-steps

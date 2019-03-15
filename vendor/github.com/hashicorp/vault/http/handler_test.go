@@ -11,10 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/vault/helper/namespace"
-
-	"github.com/hashicorp/go-cleanhttp"
+	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/vault/helper/consts"
+	"github.com/hashicorp/vault/helper/namespace"
 	"github.com/hashicorp/vault/logical"
 	"github.com/hashicorp/vault/vault"
 )
@@ -274,7 +273,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 					"default_lease_ttl": json.Number("0"),
 					"max_lease_ttl":     json.Number("0"),
 					"force_no_cache":    false,
-					"plugin_name":       "",
 				},
 				"local":     false,
 				"seal_wrap": false,
@@ -287,7 +285,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 					"default_lease_ttl": json.Number("0"),
 					"max_lease_ttl":     json.Number("0"),
 					"force_no_cache":    false,
-					"plugin_name":       "",
 				},
 				"local":     false,
 				"seal_wrap": false,
@@ -300,7 +297,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 					"default_lease_ttl": json.Number("0"),
 					"max_lease_ttl":     json.Number("0"),
 					"force_no_cache":    false,
-					"plugin_name":       "",
 				},
 				"local":     true,
 				"seal_wrap": false,
@@ -313,7 +309,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 					"default_lease_ttl": json.Number("0"),
 					"max_lease_ttl":     json.Number("0"),
 					"force_no_cache":    false,
-					"plugin_name":       "",
 				},
 				"local":     false,
 				"seal_wrap": false,
@@ -327,7 +322,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 				"default_lease_ttl": json.Number("0"),
 				"max_lease_ttl":     json.Number("0"),
 				"force_no_cache":    false,
-				"plugin_name":       "",
 			},
 			"local":     false,
 			"seal_wrap": false,
@@ -340,7 +334,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 				"default_lease_ttl": json.Number("0"),
 				"max_lease_ttl":     json.Number("0"),
 				"force_no_cache":    false,
-				"plugin_name":       "",
 			},
 			"local":     false,
 			"seal_wrap": false,
@@ -353,7 +346,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 				"default_lease_ttl": json.Number("0"),
 				"max_lease_ttl":     json.Number("0"),
 				"force_no_cache":    false,
-				"plugin_name":       "",
 			},
 			"local":     true,
 			"seal_wrap": false,
@@ -366,7 +358,6 @@ func TestSysMounts_headerAuth(t *testing.T) {
 				"default_lease_ttl": json.Number("0"),
 				"max_lease_ttl":     json.Number("0"),
 				"force_no_cache":    false,
-				"plugin_name":       "",
 			},
 			"local":     false,
 			"seal_wrap": false,
@@ -567,23 +558,11 @@ func TestHandler_requestAuth(t *testing.T) {
 		}
 	}
 
-	rInvalidScheme, err := http.NewRequest("GET", "v1/test/path", nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	rInvalidScheme.Header.Set("Authorization", "invalid_scheme something")
-	req := logical.TestRequest(t, logical.ReadOperation, "test/path")
-
-	_, err = requestAuth(core, rInvalidScheme, req)
-	if err == nil {
-		t.Fatalf("expected an error, got none")
-	}
-
 	rNothing, err := http.NewRequest("GET", "v1/test/path", nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
-	req = logical.TestRequest(t, logical.ReadOperation, "test/path")
+	req := logical.TestRequest(t, logical.ReadOperation, "test/path")
 
 	req, err = requestAuth(core, rNothing, req)
 	if err != nil {
@@ -610,23 +589,24 @@ func TestHandler_requestAuth(t *testing.T) {
 func TestHandler_getTokenFromReq(t *testing.T) {
 	r := http.Request{Header: http.Header{}}
 
-	if tok, err := getTokenFromReq(&r); err != nil {
-		t.Fatalf("expected no error, got %s", err)
-	} else if tok != "" {
+	tok, _ := getTokenFromReq(&r)
+	if tok != "" {
 		t.Fatalf("expected '' as result, got '%s'", tok)
 	}
 
 	r.Header.Set("Authorization", "Bearer TOKEN NOT_GOOD_TOKEN")
-	if tok, err := getTokenFromReq(&r); err == nil {
-		t.Fatalf("expected an error, got none")
-	} else if tok != "" {
-		t.Fatalf("expected '' as result, got '%s'", tok)
+	token, fromHeader := getTokenFromReq(&r)
+	if !fromHeader {
+		t.Fatal("expected from header")
+	} else if token != "TOKEN NOT_GOOD_TOKEN" {
+		t.Fatal("did not get expected token value")
+	} else if r.Header.Get("Authorization") == "" {
+		t.Fatal("expected value to be passed through")
 	}
 
 	r.Header.Set(consts.AuthHeaderName, "NEWTOKEN")
-	if tok, err := getTokenFromReq(&r); err != nil {
-		t.Fatalf("expected no error, got %s", err)
-	} else if tok == "TOKEN" {
+	tok, _ = getTokenFromReq(&r)
+	if tok == "TOKEN" {
 		t.Fatalf("%s header should be prioritized", consts.AuthHeaderName)
 	} else if tok != "NEWTOKEN" {
 		t.Fatalf("expected 'NEWTOKEN' as result, got '%s'", tok)
@@ -634,12 +614,12 @@ func TestHandler_getTokenFromReq(t *testing.T) {
 
 	r.Header = http.Header{}
 	r.Header.Set("Authorization", "Basic TOKEN")
-	if tok, err := getTokenFromReq(&r); err == nil {
-		t.Fatal("expected error, got none")
-	} else if tok != "" {
+	tok, fromHeader = getTokenFromReq(&r)
+	if tok != "" {
 		t.Fatalf("expected '' as result, got '%s'", tok)
+	} else if fromHeader {
+		t.Fatal("expected not from header")
 	}
-
 }
 
 func TestHandler_nonPrintableChars(t *testing.T) {
@@ -648,7 +628,9 @@ func TestHandler_nonPrintableChars(t *testing.T) {
 }
 
 func testNonPrintable(t *testing.T, disable bool) {
-	core, _, token := vault.TestCoreUnsealed(t)
+	core, _, token := vault.TestCoreUnsealedWithConfig(t, &vault.CoreConfig{
+		DisableKeyEncodingChecks: disable,
+	})
 	ln, addr := TestListener(t)
 	props := &vault.HandlerProperties{
 		Core:                  core,
