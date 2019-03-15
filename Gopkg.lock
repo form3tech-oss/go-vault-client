@@ -159,7 +159,7 @@
 
 [[projects]]
   name = "github.com/hashicorp/vault"
-  packages = ["api","audit","builtin/credential/aws","builtin/logical/database/dbplugin","builtin/plugin","helper/awsutil","helper/base62","helper/certutil","helper/compressutil","helper/consts","helper/cryptoutil","helper/dbtxn","helper/errutil","helper/forwarding","helper/hclutil","helper/identity","helper/identity/mfa","helper/jsonutil","helper/license","helper/locksutil","helper/logging","helper/mlock","helper/namespace","helper/parseutil","helper/pathmanager","helper/pgpkeys","helper/pluginutil","helper/policyutil","helper/reload","helper/salt","helper/storagepacker","helper/strutil","helper/tlsutil","helper/wrapping","helper/xor","http","logical","logical/framework","logical/plugin","logical/plugin/pb","physical","physical/inmem","plugins","plugins/database/mysql","plugins/database/postgresql","plugins/helper/database/connutil","plugins/helper/database/credsutil","plugins/helper/database/dbutil","shamir","vault","vault/seal","version"]
+  packages = ["api","audit","builtin/credential/approle","builtin/credential/aws","builtin/logical/database/dbplugin","builtin/plugin","helper/awsutil","helper/base62","helper/certutil","helper/cidrutil","helper/compressutil","helper/consts","helper/cryptoutil","helper/dbtxn","helper/errutil","helper/forwarding","helper/hclutil","helper/identity","helper/identity/mfa","helper/jsonutil","helper/license","helper/locksutil","helper/logging","helper/mlock","helper/namespace","helper/parseutil","helper/pathmanager","helper/pgpkeys","helper/pluginutil","helper/policyutil","helper/reload","helper/salt","helper/storagepacker","helper/strutil","helper/tlsutil","helper/wrapping","helper/xor","http","logical","logical/framework","logical/plugin","logical/plugin/pb","physical","physical/inmem","plugins","plugins/database/mysql","plugins/database/postgresql","plugins/helper/database/connutil","plugins/helper/database/credsutil","plugins/helper/database/dbutil","shamir","vault","vault/seal","version"]
   revision = "85909e3373aa743c34a6a0ab59131f61fd9e8e43"
   version = "v1.0.3"
 
@@ -297,6 +297,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4c75bc4b086768a720e147fb86f09630f26dc973af42de8e772c118eb43acf4c"
+  inputs-digest = "b094d1f2bb128f9a0bf032e32cbf806a29d330c69967111ad950274c660b72ac"
   solver-name = "gps-cdcl"
   solver-version = 1

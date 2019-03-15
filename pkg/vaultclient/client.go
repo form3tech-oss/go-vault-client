@@ -163,7 +163,6 @@ func (v *iamAuth) VaultClient() (*api.Client, error) {
 	if !v.auth.IsTokenExpired() {
 		return v.client, nil
 	}
-
 	var err error
 	v.auth, err = v.getAuth()
 	if err != nil {
