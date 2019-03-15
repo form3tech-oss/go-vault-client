@@ -14,6 +14,7 @@ type AuthType int
 const (
 	Token AuthType = iota + 1
 	Iam
+	AppRole
 )
 
 type iamAuth struct {
@@ -27,10 +28,12 @@ type tokenAuth struct {
 }
 
 type Config struct {
-	AuthType AuthType
-	Token    string
-	IamRole  string
-	Insecure bool
+	AuthType        AuthType
+	Token           string
+	IamRole         string
+	Insecure        bool
+	AppRoleId       string
+	AppRoleSecretId string
 }
 
 type Auth struct {
@@ -61,6 +64,16 @@ func NewDefaultConfig() *Config {
 		return &Config{
 			AuthType: Iam,
 			IamRole:  role,
+		}
+	}
+
+	appRoleId := os.Getenv("VAULT_APP_ROLE_ID")
+	appRoleSecretId := os.Getenv("VAULT_APP_SECRET_ID")
+	if appRoleId != "" && appRoleSecretId != "" {
+		return &Config{
+			AuthType:        AppRole,
+			AppRoleId:       appRoleId,
+			AppRoleSecretId: appRoleSecretId,
 		}
 	}
 

@@ -1,0 +1,44 @@
+variables:
+  GIT_STRATEGY: clone
+  GIT_CHECKOUT: "true"
+  CI_DEBUG_TRACE: "false"
+
+stages:
+  - build
+  - test
+ 
+build:
+  stage: build
+  image: golang:latest
+  script:
+    - cd $CI_PROJECT_DIR/driver
+    - go version
+    - export GOARCH=amd64
+    - export GOOS=linux
+    - go install
+    - export GOARCH=amd64
+    - export GOOS=windows
+    - go install
+
+.test_template: &test_definition
+  stage: test
+  script:
+    - cd $CI_PROJECT_DIR/driver
+    - go test -dsn $GO_HANA_DSN -test.v
+    - cd $CI_PROJECT_DIR/internal/protocol
+    - go test -test.v
+    - cd $CI_PROJECT_DIR/internal/scanner
+    - go test -test.v
+    - cd $CI_PROJECT_DIR/internal/unicode/cesu8
+    - go test -test.v
+    - cd $CI_PROJECT_DIR/driver
+    - go test -dsn $GO_HANA_TLS_DSN -test.v
+
+golang_1_11_5:
+  image: golang:1.11.5
+  <<: *test_definition 
+  
+golang_1_12:
+  image: golang:1.12
+  <<: *test_definition
+  
