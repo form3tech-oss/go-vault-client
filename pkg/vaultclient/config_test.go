@@ -17,7 +17,7 @@ func TestDefaultConfigWhenTokenSpecified(t *testing.T) {
 	}
 }
 
-func TestDefaultConfigWhenRoleSpecified(t *testing.T) {
+func TestDefaultConfigWhenIamRoleSpecified(t *testing.T) {
 	defer setEnv("VAULT_ROLE", "foo")()
 	config := NewDefaultConfig()
 
@@ -26,5 +26,25 @@ func TestDefaultConfigWhenRoleSpecified(t *testing.T) {
 	}
 	if config.AuthType != Iam {
 		t.Fatalf("expected auth type to be iam")
+	}
+}
+
+func TestDefaultConfigWhenAppRoleSpecified(t *testing.T) {
+	defer setEnv("VAULT_APP_ROLE", "testrole")()
+	defer setEnv("VAULT_APP_ROLE_ID", "myroleid")()
+	defer setEnv("VAULT_APP_SECRET_ID", "mysecretid")()
+	config := NewDefaultConfig()
+
+	if !strings.EqualFold("testrole", config.AppRole) {
+		t.Fatalf("expected app role to be testrole but was %s", config.AppRole)
+	}
+	if !strings.EqualFold("myroleid", config.AppRoleId) {
+		t.Fatalf("expected app role id to be myroleid but was %s", config.AppRoleId)
+	}
+	if !strings.EqualFold("mysecretid", config.AppRoleSecretId) {
+		t.Fatalf("expected app role secret id to be mysecretid but was %s", config.AppRoleSecretId)
+	}
+	if config.AuthType != AppRole {
+		t.Fatalf("expected auth type to be AppRole")
 	}
 }
