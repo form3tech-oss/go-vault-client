@@ -61,11 +61,16 @@ type VaultAuth interface {
 }
 
 func NewDefaultConfig() *Config {
-	token := os.Getenv("VAULT_TOKEN")
-	if token != "" {
+	appRoleName := os.Getenv("VAULT_APP_ROLE")
+	appRoleId := os.Getenv("VAULT_APP_ROLE_ID")
+	appRoleSecretId := os.Getenv("VAULT_APP_SECRET_ID")
+
+	if appRoleId != "" && appRoleSecretId != "" && appRoleName != "" {
 		return &Config{
-			AuthType: Token,
-			Token:    token,
+			AuthType:        AppRole,
+			AppRole:         appRoleName,
+			AppRoleId:       appRoleId,
+			AppRoleSecretId: appRoleSecretId,
 		}
 	}
 
@@ -77,16 +82,11 @@ func NewDefaultConfig() *Config {
 		}
 	}
 
-	appRoleName := os.Getenv("VAULT_APP_ROLE")
-	appRoleId := os.Getenv("VAULT_APP_ROLE_ID")
-	appRoleSecretId := os.Getenv("VAULT_APP_SECRET_ID")
-
-	if appRoleId != "" && appRoleSecretId != "" && appRoleName != "" {
+	token := os.Getenv("VAULT_TOKEN")
+	if token != "" {
 		return &Config{
-			AuthType:        AppRole,
-			AppRole:         appRoleName,
-			AppRoleId:       appRoleId,
-			AppRoleSecretId: appRoleSecretId,
+			AuthType: Token,
+			Token:    token,
 		}
 	}
 
