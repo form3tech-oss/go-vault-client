@@ -2,6 +2,7 @@ package vaultclient
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -44,6 +45,7 @@ type Config struct {
 	AppRole         string
 	AppRoleId       string
 	AppRoleSecretId string
+	HttpClient      *http.Client
 }
 
 type Auth struct {
@@ -95,6 +97,9 @@ func NewDefaultConfig() *Config {
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 	config := api.DefaultConfig()
+	if config.HttpClient != nil {
+		config.HttpClient = cfg.HttpClient
+	}
 	if err := config.ConfigureTLS(&api.TLSConfig{Insecure: cfg.Insecure}); err != nil {
 		return nil, err
 	}
