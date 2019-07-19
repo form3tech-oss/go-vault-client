@@ -38,6 +38,7 @@ type appRoleAuth struct {
 }
 
 type Config struct {
+	api.Config
 	AuthType        AuthType
 	Token           string
 	IamRole         string
@@ -60,6 +61,16 @@ var (
 type VaultAuth interface {
 	VaultClient() (*api.Client, error)
 	VaultClientOrPanic() *api.Client
+}
+
+func BaseConfig() *Config {
+	apiConfig := api.DefaultConfig()
+
+	config := &Config{
+		Config: *apiConfig,
+	}
+
+	return config
 }
 
 func NewDefaultConfig() *Config {
@@ -96,14 +107,7 @@ func NewDefaultConfig() *Config {
 }
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
-	config := api.DefaultConfig()
-	if config.HttpClient != nil {
-		config.HttpClient = cfg.HttpClient
-	}
-	if err := config.ConfigureTLS(&api.TLSConfig{Insecure: cfg.Insecure}); err != nil {
-		return nil, err
-	}
-	c, err := api.NewClient(config)
+	c, err := api.NewClient(&cfg.Config)
 	if err != nil {
 		return nil, err
 	}
