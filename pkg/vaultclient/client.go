@@ -106,10 +106,6 @@ func NewDefaultConfig() *Config {
 }
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
-	if cfg.HttpClient != nil {
-		cfg.HttpClient = cfg.HttpClient
-	}
-
 	c, err := api.NewClient(cfg.Config)
 	if err != nil {
 		return nil, err
