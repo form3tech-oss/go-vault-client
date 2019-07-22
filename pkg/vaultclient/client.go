@@ -106,11 +106,8 @@ func NewDefaultConfig() *Config {
 }
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
-	if cfg.HttpClient != nil {
-		cfg.HttpClient = cfg.HttpClient
-	}
-
 	c, err := api.NewClient(&cfg.Config)
+	fmt.Printf("CONFIG ADDR: %v %v", cfg.Config.Address, cfg.Address)
 	if err != nil {
 		return nil, err
 	}
