@@ -38,7 +38,7 @@ type appRoleAuth struct {
 }
 
 type Config struct {
-	api.Config
+	*api.Config
 	AuthType        AuthType
 	Token           string
 	IamRole         string
@@ -67,7 +67,7 @@ func BaseConfig() *Config {
 	apiConfig := api.DefaultConfig()
 
 	config := &Config{
-		Config: *apiConfig,
+		Config: apiConfig,
 	}
 
 	return config
@@ -107,7 +107,7 @@ func NewDefaultConfig() *Config {
 }
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
-	c, err := api.NewClient(&cfg.Config)
+	c, err := api.NewClient(cfg.Config)
 	fmt.Printf("CONFIG ADDR: %v %v", cfg.Config.Address, cfg.Address)
 	if err != nil {
 		return nil, err
