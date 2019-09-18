@@ -164,7 +164,7 @@ func (v *Auth) IsTokenExpired() bool {
 		return true
 	}
 
-	return v.expiry.Add(expirationWindow).After(time.Now().UTC())
+	return v.expiry.Before(time.Now().Add(expirationWindow).UTC())
 }
 
 func (v *iamAuth) VaultClient() (*api.Client, error) {

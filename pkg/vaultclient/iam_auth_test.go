@@ -110,6 +110,9 @@ func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 		}
 	})
 
+	// now wait out the expiration window
+	time.Sleep(expirationWindow + time.Second)
+
 	result, err := v.VaultClientOrPanic().Logical().Read("secret/foo")
 	if err != nil {
 		t.Fatalf("could not read secret using authed client, error: %s", err)
