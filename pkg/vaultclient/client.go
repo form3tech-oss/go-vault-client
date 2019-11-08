@@ -2,6 +2,7 @@ package vaultclient
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -37,13 +38,14 @@ type appRoleAuth struct {
 }
 
 type Config struct {
-	*api.Config
 	AuthType        AuthType
 	Token           string
 	IamRole         string
+	Insecure        bool
 	AppRole         string
 	AppRoleId       string
 	AppRoleSecretId string
+	HttpClient      *http.Client
 }
 
 type Auth struct {
@@ -60,53 +62,48 @@ type VaultAuth interface {
 	VaultClientOrPanic() *api.Client
 }
 
-func BaseConfig() *Config {
-	apiConfig := api.DefaultConfig()
-
-	config := &Config{
-		Config: apiConfig,
-	}
-
-	return config
-}
-
 func NewDefaultConfig() *Config {
-	config := BaseConfig()
-
 	appRoleName := os.Getenv("VAULT_APP_ROLE")
 	appRoleId := os.Getenv("VAULT_APP_ROLE_ID")
 	appRoleSecretId := os.Getenv("VAULT_APP_SECRET_ID")
-	if appRoleId != "" && appRoleSecretId != "" && appRoleName != "" {
-		config.AuthType = AppRole
-		config.AppRole = appRoleName
-		config.AppRoleId = appRoleId
-		config.AppRoleSecretId = appRoleSecretId
 
-		return config
+	if appRoleId != "" && appRoleSecretId != "" && appRoleName != "" {
+		return &Config{
+			AuthType:        AppRole,
+			AppRole:         appRoleName,
+			AppRoleId:       appRoleId,
+			AppRoleSecretId: appRoleSecretId,
+		}
 	}
 
 	role := os.Getenv("VAULT_ROLE")
 	if role != "" {
-		config.AuthType = Iam
-		config.IamRole = role
-
-		return config
+		return &Config{
+			AuthType: Iam,
+			IamRole:  role,
+		}
 	}
 
 	token := os.Getenv("VAULT_TOKEN")
 	if token != "" {
-		config.AuthType = Token
-		config.Token = token
-
-		return config
+		return &Config{
+			AuthType: Token,
+			Token:    token,
+		}
 	}
 
-	config.Error = fmt.Errorf("failed to determine auth type from env")
-	return config
+	return nil
 }
 
 func NewVaultAuth(cfg *Config) (VaultAuth, error) {
-	c, err := api.NewClient(cfg.Config)
+	config := api.DefaultConfig()
+	if config.HttpClient != nil {
+		config.HttpClient = cfg.HttpClient
+	}
+	if err := config.ConfigureTLS(&api.TLSConfig{Insecure: cfg.Insecure}); err != nil {
+		return nil, err
+	}
+	c, err := api.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +190,7 @@ func (t *tokenAuth) VaultClient() (*api.Client, error) {
 }
 
 func (t *tokenAuth) VaultClientOrPanic() *api.Client {
-	client, err := t.VaultClient()
-	if err != nil {
-		panic(err)
-	}
-	return client
+	return t.client
 }
 
 func (a *appRoleAuth) getAuth() (*Auth, error) {

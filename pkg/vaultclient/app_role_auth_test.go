@@ -1,7 +1,6 @@
 package vaultclient
 
 import (
-	"github.com/hashicorp/vault/api"
 	"os"
 	"strings"
 	"testing"
@@ -28,16 +27,11 @@ func TestAppRoleAuth(t *testing.T) {
 	}
 	roleID := resp.Data["role_id"].(string)
 
-	config := BaseConfig()
-	config.AuthType = AppRole
-	config.AppRoleId = roleID
-	config.AppRoleSecretId = secretID
-
-	err = config.ConfigureTLS(&api.TLSConfig{
-		Insecure: true,
-	})
-	if err != nil {
-		t.Fatal(err)
+	config := &Config{
+		Insecure:        true,
+		AuthType:        AppRole,
+		AppRoleId:       roleID,
+		AppRoleSecretId: secretID,
 	}
 
 	v, err := NewVaultAuth(config)

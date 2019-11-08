@@ -14,6 +14,7 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 	uuid "github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/vault/audit"
+	"github.com/hashicorp/vault/helper/certutil"
 	"github.com/hashicorp/vault/helper/consts"
 	"github.com/hashicorp/vault/helper/jsonutil"
 	"github.com/hashicorp/vault/helper/namespace"
@@ -575,7 +576,9 @@ func (c *Core) waitForLeadership(newLeaderCh chan func(), manualStepDownCh, stop
 					c.logger.Error("clearing leader advertisement failed", "error", err)
 				}
 
-				c.heldHALock.Unlock()
+				if err := c.heldHALock.Unlock(); err != nil {
+					c.logger.Error("unlocking HA lock failed", "error", err)
+				}
 				c.heldHALock = nil
 			}
 
@@ -588,6 +591,9 @@ func (c *Core) waitForLeadership(newLeaderCh chan func(), manualStepDownCh, stop
 	}
 }
 
+// grabLockOrStop returns true if we failed to get the lock before stopCh
+// was closed.  Returns false if the lock was obtained, in which case it's
+// the caller's responsibility to unlock it.
 func grabLockOrStop(lockFunc, unlockFunc func(), stopCh chan struct{}) (stopped bool) {
 	// Grab the lock as we need it for cluster setup, which needs to happen
 	// before advertising;
@@ -641,6 +647,12 @@ func (c *Core) periodicLeaderRefresh(newLeaderCh chan func(), stopCh chan struct
 				// Bind locally, as the race detector is tripping here
 				lopCount := opCount
 				isLeader, _, newClusterAddr, _ := c.Leader()
+
+				// If we are the leader reset the clusterAddr since the next
+				// failover might go to the node that was previously active.
+				if isLeader {
+					clusterAddr = ""
+				}
 
 				if !isLeader && newClusterAddr != clusterAddr && newLeaderCh != nil {
 					select {
@@ -817,7 +829,7 @@ func (c *Core) advertiseLeader(ctx context.Context, uuid string, leaderLostCh <-
 		return fmt.Errorf("unknown cluster private key type %T", c.localClusterPrivateKey.Load())
 	}
 
-	keyParams := &clusterKeyParams{
+	keyParams := &certutil.ClusterKeyParams{
 		Type: corePrivateKeyTypeP521,
 		X:    key.X,
 		Y:    key.Y,

@@ -4,14 +4,7 @@ platform := $(shell uname)
 
 GOFMT_FILES?=$$(find ./ -name '*.go' | grep -v vendor)
 
-default: install-deps test
-
-install-deps: install-goimports
-
-install-goimports:
-	@if [ ! -f ./goimports ]; then \
-		go get golang.org/x/tools/cmd/goimports; \
-	fi
+default: test
 
 test:
 	@echo "executing tests..."

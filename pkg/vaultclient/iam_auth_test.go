@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/consul/testutil/retry"
-	"github.com/hashicorp/vault/api"
+	"github.com/hashicorp/consul/sdk/testutil/retry"
 )
 
 const (
@@ -38,17 +37,11 @@ func TestIamAuthClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config := BaseConfig()
-	config.AuthType = Iam
-	config.IamRole = "test"
-
-	err = config.ConfigureTLS(&api.TLSConfig{
+	config := &Config{
+		AuthType: Iam,
 		Insecure: true,
-	})
-	if err != nil {
-		t.Fatal(err)
+		IamRole:  "test",
 	}
-
 	v, err := NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)
@@ -84,17 +77,11 @@ func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config := BaseConfig()
-	config.AuthType = Iam
-	config.IamRole = "test"
-
-	err = config.ConfigureTLS(&api.TLSConfig{
+	config := &Config{
+		AuthType: Iam,
 		Insecure: true,
-	})
-	if err != nil {
-		t.Fatal(err)
+		IamRole:  "test",
 	}
-
 	v, err := NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)
