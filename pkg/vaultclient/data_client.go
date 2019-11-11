@@ -26,10 +26,16 @@ func ConfigureDefault() error {
 	return Configure(NewDefaultConfig())
 }
 
+// Onus is on the caller to make sure the client has been configured
+func GetClient() *api.Client {
+	return vaultClient
+}
+
 func Read(path string) (*api.Secret, error) {
 	return vaultClient.Logical().Read(path)
 }
 
+// ReadData returns the Data held in the Secret, use Read if you need metadata
 func ReadData(path string) (map[string]interface{}, error) {
 	data, err := Read(path)
 
@@ -49,11 +55,12 @@ func Write(path string, data map[string]interface{}) (*api.Secret, error) {
 	return vaultClient.Logical().Write(path, data)
 }
 
+// WriteData returns the Data held in the Secret, use Write if you need metadata
 func WriteData(path string, data map[string]interface{}) (map[string]interface{}, error) {
 	secret, err := Write(path, data)
 
 	// Logical operations can legitimately return nil, nil
-	if data == nil && err == nil {
+	if secret == nil && err == nil {
 		return nil, nil
 	}
 
@@ -68,6 +75,7 @@ func List(path string) (*api.Secret, error) {
 	return vaultClient.Logical().List(path)
 }
 
+// ListData returns the Data held in the Secrets, use List if you need metadata
 func ListData(path string) ([]interface{}, error) {
 	secret, err := List(path)
 
@@ -97,7 +105,8 @@ func Delete(path string) (*api.Secret, error) {
 	return vaultClient.Logical().Delete(path)
 }
 
-func DeleteData(path string) (data map[string]interface{}, error) {
+// DeleteData returns the Data held in the Secret, use Delete if you need metadata
+func DeleteData(path string) (map[string]interface{}, error) {
 	secret, err := Delete(path)
 
 	// Logical operations can legitimately return nil, nil
@@ -106,7 +115,7 @@ func DeleteData(path string) (data map[string]interface{}, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("vault error - fail to perform delete operationthe path '%s'", path)
+		return nil, fmt.Errorf("vault error - fail to perform delete operation on path '%s'", path)
 	}
 
 	return secret.Data, nil
