@@ -2,8 +2,10 @@ package vaultclient
 
 import (
 	"os"
-	"reflect"
 	"testing"
+
+	"github.com/hashicorp/vault/api"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestConfigure(t *testing.T) {
@@ -21,165 +23,103 @@ func TestConfigure(t *testing.T) {
 	}
 }
 
-func TestConfigureDefault(t *testing.T) {
-	vault, deferFunc := newVault(t)
-	defer deferFunc()
-
-	os.Setenv("VAULT_TOKEN", vault.rootToken)
-
-	err := ConfigureDefault()
-
-	os.Unsetenv("VAULT_TOKEN")
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestReadWriteData(t *testing.T) {
-	vault, deferFunc := newVault(t)
-	defer deferFunc()
-
-	os.Setenv("VAULT_ADDR", vault.address)
-	defer os.Unsetenv("VAULT_ADDR")
-	cfg := &Config{
-		AuthType: Token,
-		Insecure: true,
-		Token:    vault.rootToken,
-	}
-
-	err := Configure(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func (suite *DataClientTestSuite) TestReadWriteData() {
 	data, err := ReadData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if data != nil {
-		t.Fatalf("expected 'secret/foo' to be empty path, got '%v'", data)
-	}
+
+	suite.Nil(err)
+	suite.Nilf(data, "expected 'secret/foo' to be empty path, got '%v'", data)
 
 	testData := map[string]interface{}{"foo": "bar"}
 
 	data, err = WriteData("secret/foo", testData)
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
 	data, err = ReadData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
 
-	eq := reflect.DeepEqual(data, testData)
-	if !eq {
-		t.Errorf("Expected data (%s) to be equal to testData (%s)", data, testData)
-	}
+	suite.Equalf(data, testData, "Expected data (%s) to be equal to testData (%s)", data, testData)
 }
 
-func TestListData(t *testing.T) {
-	vault, deferFunc := newVault(t)
-	defer deferFunc()
-
-	os.Setenv("VAULT_ADDR", vault.address)
-	defer os.Unsetenv("VAULT_ADDR")
-	cfg := &Config{
-		AuthType: Token,
-		Insecure: true,
-		Token:    vault.rootToken,
-	}
-
-	err := Configure(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func (suite *DataClientTestSuite) TestListData() {
 	data, err := ReadData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if data != nil {
-		t.Fatalf("expected 'secret/foo' to be empty path, got '%v'", data)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "expected 'secret/foo' to be empty path, got '%v'", data)
 
 	testData := map[string]interface{}{"foo": "bar"}
 
 	data, err = WriteData("secret/foo", testData)
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
 	listData, err := ListData("secret")
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
 
-	if len(listData) != 1 {
-		t.Fatalf("Expected length of keys to be 1, got %d. (%s)", len(listData), listData)
-	}
+	suite.Lenf(listData, 1, "Expected length of keys to be 1, got %d. (%s)", len(listData), listData)
 
 	for _, key := range listData {
 		_, ok := testData[key.(string)]
-		if !ok {
-			t.Fatalf("Unexpected key in list response: %s", key)
-		}
+		suite.Truef(ok, "Unexpected key in list response: %s", key)
 	}
 }
 
-func TestDeleteData(t *testing.T) {
-	vault, deferFunc := newVault(t)
-	defer deferFunc()
-
-	os.Setenv("VAULT_ADDR", vault.address)
-	defer os.Unsetenv("VAULT_ADDR")
-	cfg := &Config{
-		AuthType: Token,
-		Insecure: true,
-		Token:    vault.rootToken,
-	}
-
-	err := Configure(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func (suite *DataClientTestSuite) TestDeleteData() {
 	data, err := ReadData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if data != nil {
-		t.Fatalf("expected 'secret/foo' to be empty path, got '%v'", data)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "expected 'secret/foo' to be empty path, got '%v'", data)
 
 	testData := map[string]interface{}{"foo": "bar"}
 
 	data, err = WriteData("secret/foo", testData)
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
 	data, err = ReadData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
 
-	eq := reflect.DeepEqual(data, testData)
-	if !eq {
-		t.Errorf("Expected data (%s) to be equal to testData (%s)", data, testData)
-	}
+	suite.Equalf(data, testData, "Expected data (%s) to be equal to testData (%s)", data, testData)
 
 	data, err = DeleteData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
 	data, err = ReadData("secret/foo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	suite.Nil(err)
+	suite.Nilf(data, "Expected data (%s) to be nil", data)
+}
 
-	if data != nil {
-		t.Errorf("Expected data (%s) to be nil", data)
-	}
+type DataClientTestSuite struct {
+	suite.Suite
+	vault     *configuredVault
+	deferFunc func()
+}
+
+func (suite *DataClientTestSuite) SetupTest() {
+	vault, deferFunc := newVault(suite.T())
+	suite.vault = vault
+	suite.deferFunc = deferFunc
+
+	os.Setenv("VAULT_ADDR", vault.address)
+	defer os.Unsetenv("VAULT_ADDR")
+
+	config := BaseConfig()
+	config.AuthType = Token
+	config.Token = vault.rootToken
+
+	err := config.ConfigureTLS(&api.TLSConfig{
+		Insecure: true,
+	})
+	suite.Nil(err)
+
+	err = Configure(config)
+	suite.Nil(err)
+}
+
+func (suite *DataClientTestSuite) TeardownTest() {
+	suite.deferFunc()
+}
+
+func TestDataClientTestSuite(t *testing.T) {
+	suite.Run(t, new(DataClientTestSuite))
+
 }
