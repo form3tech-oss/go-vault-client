@@ -6,7 +6,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/armon/go-metrics v0.3.0 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-sdk-go v1.25.30
+        github.com/aws/aws-sdk-go v1.15.55
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
