@@ -11,6 +11,7 @@ var vaultClient *api.Client
 
 func Configure(config *Config) error {
 	vaultClientFactory, err := NewVaultAuth(config)
+
 	if err != nil {
 		return errors.Wrapf(err, "creating vault client factory")
 	}
@@ -23,7 +24,12 @@ func Configure(config *Config) error {
 }
 
 func ConfigureDefault() error {
-	return Configure(NewDefaultConfig())
+	config := NewDefaultConfig()
+	if config.Error != nil {
+		return errors.Wrapf(config.Error, "configuring vault client")
+	}
+
+	return Configure(config)
 }
 
 // Onus is on the caller to make sure the client has been configured
