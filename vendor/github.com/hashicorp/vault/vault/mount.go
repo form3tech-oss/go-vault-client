@@ -174,6 +174,21 @@ func (t *MountTable) remove(ctx context.Context, path string) (*MountEntry, erro
 	return nil, nil
 }
 
+func (t *MountTable) find(ctx context.Context, path string) (*MountEntry, error) {
+	n := len(t.Entries)
+	ns, err := namespace.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < n; i++ {
+		if entry := t.Entries[i]; entry.Path == path && entry.Namespace().ID == ns.ID {
+			return entry, nil
+		}
+	}
+	return nil, nil
+}
+
 // sortEntriesByPath sorts the entries in the table by path and returns the
 // table; this is useful for tests
 func (t *MountTable) sortEntriesByPath() *MountTable {
@@ -380,7 +395,21 @@ func (c *Core) mountInternal(ctx context.Context, entry *MountEntry, updateStora
 	// Ensure the cache is populated, don't need the result
 	NamespaceByID(ctx, ns.ID, c)
 
-	// Verify there are no conflicting mounts
+	// Basic check for matching names
+	for _, ent := range c.mounts.Entries {
+		if ns.ID == ent.NamespaceID {
+			switch {
+			// Existing is oauth/github/ new is oauth/ or
+			// existing is oauth/ and new is oauth/github/
+			case strings.HasPrefix(ent.Path, entry.Path):
+				fallthrough
+			case strings.HasPrefix(entry.Path, ent.Path):
+				return logical.CodedError(409, fmt.Sprintf("path is already in use at %s", ent.Path))
+			}
+		}
+	}
+
+	// Verify there are no conflicting mounts in the router
 	if match := c.router.MountConflict(ctx, entry.Path); match != "" {
 		return logical.CodedError(409, fmt.Sprintf("existing mount at %s", match))
 	}
@@ -556,11 +585,6 @@ func (c *Core) unmountInternal(ctx context.Context, path string, updateStorage b
 		backend.Cleanup(ctx)
 	}
 
-	// Unmount the backend entirely
-	if err := c.router.Unmount(ctx, path); err != nil {
-		return err
-	}
-
 	viewPath := entry.ViewPath()
 	switch {
 	case !updateStorage:
@@ -577,9 +601,15 @@ func (c *Core) unmountInternal(ctx context.Context, path string, updateStorage b
 			return err
 		}
 	}
+
 	// Remove the mount table entry
 	if err := c.removeMountEntry(ctx, path, updateStorage); err != nil {
 		c.logger.Error("failed to remove mount entry for path being unmounted", "error", err, "path", path)
+		return err
+	}
+
+	// Unmount the backend entirely
+	if err := c.router.Unmount(ctx, path); err != nil {
 		return err
 	}
 
@@ -851,6 +881,7 @@ func (c *Core) loadMounts(ctx context.Context) error {
 		for _, coreMount := range c.mounts.Entries {
 			if coreMount.Type == requiredMount.Type {
 				foundRequired = true
+				coreMount.Config = requiredMount.Config
 				break
 			}
 		}
@@ -1193,36 +1224,37 @@ func (c *Core) defaultMountTable() *MountTable {
 	table := &MountTable{
 		Type: mountTableType,
 	}
-	mountUUID, err := uuid.GenerateUUID()
-	if err != nil {
-		panic(fmt.Sprintf("could not create default secret mount UUID: %v", err))
-	}
-	mountAccessor, err := c.generateMountAccessor("kv")
-	if err != nil {
-		panic(fmt.Sprintf("could not generate default secret mount accessor: %v", err))
-	}
-	bUUID, err := uuid.GenerateUUID()
-	if err != nil {
-		panic(fmt.Sprintf("could not create default secret mount backend UUID: %v", err))
+	table.Entries = append(table.Entries, c.requiredMountTable().Entries...)
+
+	if os.Getenv("VAULT_INTERACTIVE_DEMO_SERVER") != "" {
+		mountUUID, err := uuid.GenerateUUID()
+		if err != nil {
+			panic(fmt.Sprintf("could not create default secret mount UUID: %v", err))
+		}
+		mountAccessor, err := c.generateMountAccessor("kv")
+		if err != nil {
+			panic(fmt.Sprintf("could not generate default secret mount accessor: %v", err))
+		}
+		bUUID, err := uuid.GenerateUUID()
+		if err != nil {
+			panic(fmt.Sprintf("could not create default secret mount backend UUID: %v", err))
+		}
+
+		kvMount := &MountEntry{
+			Table:            mountTableType,
+			Path:             "secret/",
+			Type:             "kv",
+			Description:      "key/value secret storage",
+			UUID:             mountUUID,
+			Accessor:         mountAccessor,
+			BackendAwareUUID: bUUID,
+			Options: map[string]string{
+				"version": "2",
+			},
+		}
+		table.Entries = append(table.Entries, kvMount)
 	}
 
-	kvMount := &MountEntry{
-		Table:            mountTableType,
-		Path:             "secret/",
-		Type:             "kv",
-		Description:      "key/value secret storage",
-		UUID:             mountUUID,
-		Accessor:         mountAccessor,
-		BackendAwareUUID: bUUID,
-		Options: map[string]string{
-			"version": "1",
-		},
-	}
-	if os.Getenv("VAULT_INTERACTIVE_DEMO_SERVER") != "" {
-		kvMount.Options["version"] = "2"
-	}
-	table.Entries = append(table.Entries, kvMount)
-	table.Entries = append(table.Entries, c.requiredMountTable().Entries...)
 	return table
 }
 
@@ -1275,6 +1307,9 @@ func (c *Core) requiredMountTable() *MountTable {
 		UUID:             sysUUID,
 		Accessor:         sysAccessor,
 		BackendAwareUUID: sysBackendUUID,
+		Config: MountConfig{
+			PassthroughRequestHeaders: []string{"Accept"},
+		},
 	}
 
 	identityUUID, err := uuid.GenerateUUID()

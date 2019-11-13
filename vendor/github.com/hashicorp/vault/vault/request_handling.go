@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	metrics "github.com/armon/go-metrics"
@@ -351,6 +352,23 @@ func (c *Core) checkToken(ctx context.Context, req *logical.Request, unauth bool
 
 	if !authResults.Allowed {
 		retErr := authResults.Error
+
+		// If we get a control group error and we are a performance standby,
+		// restore the client token information to the request so that we can
+		// forward this request properly to the active node.
+		if retErr.ErrorOrNil() != nil && checkErrControlGroupTokenNeedsCreated(retErr) &&
+			c.perfStandby && len(req.ClientToken) != 0 {
+			switch req.ClientTokenSource {
+			case logical.ClientTokenFromVaultHeader:
+				req.Headers[consts.AuthHeaderName] = []string{req.ClientToken}
+			case logical.ClientTokenFromAuthzHeader:
+				req.Headers["Authorization"] = append(req.Headers["Authorization"], fmt.Sprintf("Bearer %s", req.ClientToken))
+			}
+			// We also return the appropriate error so that the caller can forward the
+			// request to the active node
+			return auth, te, logical.ErrPerfStandbyPleaseForward
+		}
+
 		if authResults.Error.ErrorOrNil() == nil || authResults.DeniedError {
 			retErr = multierror.Append(retErr, logical.ErrPermissionDenied)
 		}
@@ -362,13 +380,24 @@ func (c *Core) checkToken(ctx context.Context, req *logical.Request, unauth bool
 
 // HandleRequest is used to handle a new incoming request
 func (c *Core) HandleRequest(httpCtx context.Context, req *logical.Request) (resp *logical.Response, err error) {
-	c.stateLock.RLock()
+	return c.switchedLockHandleRequest(httpCtx, req, true)
+}
+
+func (c *Core) switchedLockHandleRequest(httpCtx context.Context, req *logical.Request, doLocking bool) (resp *logical.Response, err error) {
+	if doLocking {
+		c.stateLock.RLock()
+	}
+	unlockFunc := func() {
+		if doLocking {
+			c.stateLock.RUnlock()
+		}
+	}
 	if c.Sealed() {
-		c.stateLock.RUnlock()
+		unlockFunc()
 		return nil, consts.ErrSealed
 	}
 	if c.standby && !c.perfStandby {
-		c.stateLock.RUnlock()
+		unlockFunc()
 		return nil, consts.ErrStandby
 	}
 
@@ -384,7 +413,7 @@ func (c *Core) HandleRequest(httpCtx context.Context, req *logical.Request) (res
 	ns, err := namespace.FromContext(httpCtx)
 	if err != nil {
 		cancel()
-		c.stateLock.RUnlock()
+		unlockFunc()
 		return nil, errwrap.Wrapf("could not parse namespace from http context: {{err}}", err)
 	}
 	ctx = namespace.ContextWithNamespace(ctx, ns)
@@ -393,7 +422,7 @@ func (c *Core) HandleRequest(httpCtx context.Context, req *logical.Request) (res
 
 	req.SetTokenEntry(nil)
 	cancel()
-	c.stateLock.RUnlock()
+	unlockFunc()
 	return resp, err
 }
 
@@ -529,6 +558,18 @@ func isControlGroupRun(req *logical.Request) bool {
 	return req.ControlGroup != nil
 }
 
+func (c *Core) doRouting(ctx context.Context, req *logical.Request) (*logical.Response, error) {
+	// If we're replicating and we get a read-only error from a backend, need to forward to primary
+	resp, err := c.router.Route(ctx, req)
+	if err != nil {
+		if shouldForward(c, err) {
+			return forward(ctx, c, req)
+		}
+	}
+	atomic.AddUint64(c.counters.requests, 1)
+	return resp, err
+}
+
 func (c *Core) handleRequest(ctx context.Context, req *logical.Request) (retResp *logical.Response, retAuth *logical.Auth, retErr error) {
 	defer metrics.MeasureSince([]string{"core", "handle_request"}, time.Now())
 
@@ -662,12 +703,9 @@ func (c *Core) handleRequest(ctx context.Context, req *logical.Request) (retResp
 	}
 
 	// Route the request
-	resp, routeErr := c.router.Route(ctx, req)
-	// If we're replicating and we get a read-only error from a backend, need to forward to primary
-	if routeErr != nil {
-		resp, routeErr = possiblyForward(ctx, c, req, resp, routeErr)
-	}
+	resp, routeErr := c.doRouting(ctx, req)
 	if resp != nil {
+
 		// If wrapping is used, use the shortest between the request and response
 		var wrapTTL time.Duration
 		var wrapFormat, creationPath string
@@ -876,9 +914,17 @@ func (c *Core) handleLoginRequest(ctx context.Context, req *logical.Request) (re
 
 	req.Unauthenticated = true
 
-	var auth *logical.Auth
+	var nonHMACReqDataKeys []string
+	entry := c.router.MatchingMountEntry(ctx, req.Path)
+	if entry != nil {
+		// Get and set ignored HMAC'd value.
+		if rawVals, ok := entry.synthesizedConfigCache.Load("audit_non_hmac_request_keys"); ok {
+			nonHMACReqDataKeys = rawVals.([]string)
+		}
+	}
 
 	// Do an unauth check. This will cause EGP policies to be checked
+	var auth *logical.Auth
 	var ctErr error
 	auth, _, ctErr = c.checkToken(ctx, req, true)
 	if ctErr == logical.ErrPerfStandbyPleaseForward {
@@ -893,15 +939,6 @@ func (c *Core) handleLoginRequest(ctx context.Context, req *logical.Request) (re
 			errType = ctErr
 		default:
 			errType = logical.ErrInvalidRequest
-		}
-
-		var nonHMACReqDataKeys []string
-		entry := c.router.MatchingMountEntry(ctx, req.Path)
-		if entry != nil {
-			// Get and set ignored HMAC'd value.
-			if rawVals, ok := entry.synthesizedConfigCache.Load("audit_non_hmac_request_keys"); ok {
-				nonHMACReqDataKeys = rawVals.([]string)
-			}
 		}
 
 		logInput := &audit.LogInput{
@@ -927,8 +964,9 @@ func (c *Core) handleLoginRequest(ctx context.Context, req *logical.Request) (re
 	// Create an audit trail of the request. Attach auth if it was returned,
 	// e.g. if a token was provided.
 	logInput := &audit.LogInput{
-		Auth:    auth,
-		Request: req,
+		Auth:               auth,
+		Request:            req,
+		NonHMACReqDataKeys: nonHMACReqDataKeys,
 	}
 	if err := c.auditBroker.LogRequest(ctx, logInput, c.auditedHeaders); err != nil {
 		c.logger.Error("failed to audit request", "path", req.Path, "error", err)
@@ -943,11 +981,7 @@ func (c *Core) handleLoginRequest(ctx context.Context, req *logical.Request) (re
 	}
 
 	// Route the request
-	resp, routeErr := c.router.Route(ctx, req)
-	// If we're replicating and we get a read-only error from a backend, need to forward to primary
-	if routeErr != nil {
-		resp, routeErr = possiblyForward(ctx, c, req, resp, routeErr)
-	}
+	resp, routeErr := c.doRouting(ctx, req)
 	if resp != nil {
 		// If wrapping is used, use the shortest between the request and response
 		var wrapTTL time.Duration
@@ -1162,6 +1196,7 @@ func (c *Core) RegisterAuth(ctx context.Context, tokenTTL time.Duration, path st
 	auth.ClientToken = te.ID
 	auth.Accessor = te.Accessor
 	auth.TTL = te.TTL
+	auth.Orphan = te.Parent == ""
 
 	switch auth.TokenType {
 	case logical.TokenTypeBatch:

@@ -4,8 +4,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/hashicorp/vault/api"
 )
 
 func TestTokenAuth(t *testing.T) {
@@ -17,17 +15,11 @@ func TestTokenAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config := BaseConfig()
-	config.AuthType = Token
-	config.Token = configuredVault.rootToken
-
-	err = config.ConfigureTLS(&api.TLSConfig{
+	config := &Config{
+		AuthType: Token,
 		Insecure: true,
-	})
-	if err != nil {
-		t.Fatal(err)
+		Token:    configuredVault.rootToken,
 	}
-
 	v, err := NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)

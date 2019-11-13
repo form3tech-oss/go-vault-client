@@ -3,6 +3,7 @@ package physical
 import (
 	"context"
 	"math/rand"
+	"sync"
 	"time"
 
 	log "github.com/hashicorp/go-hclog"
@@ -15,9 +16,11 @@ const (
 
 // LatencyInjector is used to add latency into underlying physical requests
 type LatencyInjector struct {
+	logger        log.Logger
 	backend       Backend
 	latency       time.Duration
 	jitterPercent int
+	randomLock    *sync.Mutex
 	random        *rand.Rand
 }
 
@@ -40,9 +43,11 @@ func NewLatencyInjector(b Backend, latency time.Duration, jitter int, logger log
 	logger.Info("creating latency injector")
 
 	return &LatencyInjector{
+		logger:        logger,
 		backend:       b,
 		latency:       latency,
 		jitterPercent: jitter,
+		randomLock:    new(sync.Mutex),
 		random:        rand.New(rand.NewSource(int64(time.Now().Nanosecond()))),
 	}
 }
@@ -55,13 +60,20 @@ func NewTransactionalLatencyInjector(b Backend, latency time.Duration, jitter in
 	}
 }
 
+func (l *LatencyInjector) SetLatency(latency time.Duration) {
+	l.logger.Info("Changing backend latency", "latency", latency)
+	l.latency = latency
+}
+
 func (l *LatencyInjector) addLatency() {
 	// Calculate a value between 1 +- jitter%
 	percent := 100
 	if l.jitterPercent > 0 {
 		min := 100 - l.jitterPercent
 		max := 100 + l.jitterPercent
+		l.randomLock.Lock()
 		percent = l.random.Intn(max-min) + min
+		l.randomLock.Unlock()
 	}
 	latencyDuration := time.Duration(int(l.latency) * percent / 100)
 	time.Sleep(latencyDuration)
