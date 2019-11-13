@@ -6,7 +6,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/armon/go-metrics v0.3.0 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-sdk-go v1.25.30
+        github.com/aws/aws-sdk-go v1.15.55
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
@@ -31,8 +31,10 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.0.0-20191107222254-f4817d981bb6 // indirect
 	golang.org/x/net v0.0.0-20191108063844-7e6e90b9ea88 // indirect
 	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
