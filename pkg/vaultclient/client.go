@@ -192,7 +192,10 @@ func generateLoginData(creds *credentials.Credentials, configuredRegion string) 
 	var params *sts.GetCallerIdentityInput
 	svc := sts.New(stsSession)
 	stsRequest, _ := svc.GetCallerIdentityRequest(params)
-	stsRequest.Sign()
+	err = stsRequest.Sign()
+	if err != nil {
+		return nil, err
+	}
 
 	// Now extract out the relevant parts of the request
 	headersJson, err := json.Marshal(stsRequest.HTTPRequest.Header)
