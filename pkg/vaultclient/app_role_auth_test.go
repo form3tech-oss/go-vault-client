@@ -1,10 +1,11 @@
 package vaultclient
 
 import (
-	"github.com/hashicorp/vault/api"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/vault/api"
 )
 
 func TestAppRoleAuth(t *testing.T) {

@@ -17,6 +17,9 @@ const (
 	envVarAwsTestSecretKey = "AWS_TEST_SECRET_KEY"
 	envVarAwsTestRoleArn   = "AWS_TEST_ROLE_ARN"
 
+	awsTestStsEndpoint = "https://sts.eu-west-1.amazonaws.com"
+	awsTestRegion      = "eu-west-1"
+
 	envVarAwsAccessKey    = "AWS_ACCESS_KEY_ID"
 	envVarAwsSecretKey    = "AWS_SECRET_ACCESS_KEY"
 	envVarAwsSessionToken = "AWS_SESSION_TOKEN"

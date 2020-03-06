@@ -5,18 +5,16 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	hclog "github.com/hashicorp/go-hclog"
 	uuid "github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/vault/api"
 	credAppRole "github.com/hashicorp/vault/builtin/credential/approle"
 	vaultaws "github.com/hashicorp/vault/builtin/credential/aws"
-	"github.com/hashicorp/vault/helper/logging"
 	vaulthttp "github.com/hashicorp/vault/http"
-	"github.com/hashicorp/vault/logical"
+	"github.com/hashicorp/vault/sdk/helper/logging"
+	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/hashicorp/vault/vault"
 )
 
@@ -58,6 +56,14 @@ func newVaultConfiguredForIamAuth(t *testing.T, leaseTtl, maxLeaseTtl string) (*
 		"policies":  "foowriter",
 		// Retain thru the account number of the given arn and wildcard the rest.
 		"bound_iam_principal_arn": os.Getenv(envVarAwsTestRoleArn)[:25] + "*",
+	}); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+
+	if _, err := client.Logical().Write("auth/aws/config/client", map[string]interface{}{
+		"sts_endpoint": awsTestStsEndpoint,
+		"sts_region":   awsTestRegion,
 	}); err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
@@ -171,11 +177,8 @@ func newVault(t *testing.T) (*configuredVault, func()) {
 }
 
 func setAwsEnvCreds() error {
-
-	cfg := &aws.Config{
-		Credentials: credentials.NewStaticCredentials(os.Getenv(envVarAwsTestAccessKey), os.Getenv(envVarAwsTestSecretKey), ""),
-	}
-	sess, err := session.NewSession(cfg)
+	creds := credentials.NewStaticCredentials(os.Getenv(envVarAwsTestAccessKey), os.Getenv(envVarAwsTestSecretKey), "")
+	sess, err := createSession(creds, os.Getenv(envVarAwsRegion))
 	if err != nil {
 		return err
 	}
