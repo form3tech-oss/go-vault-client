@@ -117,8 +117,21 @@ func testIamAuthClient(t *testing.T, configuredVault *configuredVault, path stri
 }
 
 func TestExpiredIamTokenGetsRenewed(t *testing.T) {
-	configuredVault, deferFunc := newVaultConfiguredForIamAuth(t, "10s", "10s")
-	defer deferFunc()
+	configuredVault, destroy := newVaultConfiguredForIamAuth(t, "10s", "10s")
+	if err := os.Setenv(envVarStsAwsRegion, awsTestRegion); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+	defer destroy()
+
+	// write client config
+	if _, err := configuredVault.rootClient.Logical().Write("auth/aws/config/client", map[string]interface{}{
+		"sts_endpoint": awsTestStsRegionalEndpoint,
+		"sts_region":   awsTestRegion,
+	}); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
 
 	// write secret as root
 	if _, err := configuredVault.rootClient.Logical().Write("secret/foo", map[string]interface{}{
