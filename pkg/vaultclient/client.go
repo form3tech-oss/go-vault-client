@@ -25,7 +25,8 @@ const (
 	Token AuthType = iota + 1
 	Iam
 	AppRole
-	envVarAwsRegion = "AWS_REGION"
+	envVarAwsRegion    = "AWS_REGION"
+	envVarStsAwsRegion = "STS_AWS_REGION"
 )
 
 type iamAuth struct {
@@ -175,9 +176,12 @@ func endpointSigningResolver(service, region string, optFns ...func(*endpoints.O
 	if err != nil {
 		return defaultEndpoint, err
 	}
-	defaultEndpoint.SigningRegion = region
 	defaultEndpoint.SigningName = service
-	defaultEndpoint.URL = fmt.Sprintf("https://%s.%v.amazonaws.com", service, region)
+	stsRegion, present := os.LookupEnv(envVarStsAwsRegion)
+	if present {
+		defaultEndpoint.SigningRegion = stsRegion
+		defaultEndpoint.URL = fmt.Sprintf("https://%s.%v.amazonaws.com", service, stsRegion)
+	}
 	return defaultEndpoint, nil
 }
 

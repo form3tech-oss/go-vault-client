@@ -1,6 +1,7 @@
 package vaultclient
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -17,24 +18,68 @@ const (
 	envVarAwsTestSecretKey = "AWS_TEST_SECRET_KEY"
 	envVarAwsTestRoleArn   = "AWS_TEST_ROLE_ARN"
 
-	awsTestStsEndpoint = "https://sts.eu-west-1.amazonaws.com"
-	awsTestRegion      = "eu-west-1"
+	awsTestStsRegionalEndpoint = "https://sts.eu-west-1.amazonaws.com"
+	awsTestRegion              = "eu-west-1"
 
 	envVarAwsAccessKey    = "AWS_ACCESS_KEY_ID"
 	envVarAwsSecretKey    = "AWS_SECRET_ACCESS_KEY"
 	envVarAwsSessionToken = "AWS_SESSION_TOKEN"
 )
 
-func TestIamAuthClient(t *testing.T) {
+func TestIamAuthWithGlobalEndpointClient(t *testing.T) {
 	configuredVault, destroy := newVaultConfiguredForIamAuth(t, "1h", "1h")
 	defer destroy()
 
 	// write secret as root
-	if _, err := configuredVault.rootClient.Logical().Write("secret/foo", map[string]interface{}{
+	secretPath := "secret/global"
+	if _, err := configuredVault.rootClient.Logical().Write(secretPath, map[string]interface{}{
 		"foo": "bar",
 	}); err != nil {
 		t.Fatal(err)
 	}
+
+	// write client config
+	if _, err := configuredVault.rootClient.Logical().Write("auth/aws/config/client", map[string]interface{}{
+		"sts_endpoint": "",
+		"sts_region":   "",
+	}); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+	testIamAuthClient(t, configuredVault, secretPath)
+}
+
+func TestIamAuthWithRegionalEndpointClient(t *testing.T) {
+
+	configuredVault, destroy := newVaultConfiguredForIamAuth(t, "1h", "1h")
+
+	// write secret as root
+	secretPath := "secret/regional"
+	if _, err := configuredVault.rootClient.Logical().Write(secretPath, map[string]interface{}{
+		"foo": "bar",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Setenv(envVarStsAwsRegion, awsTestRegion); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+	defer destroy()
+
+	// write client config
+	if _, err := configuredVault.rootClient.Logical().Write("auth/aws/config/client", map[string]interface{}{
+		"sts_endpoint": awsTestStsRegionalEndpoint,
+		"sts_region":   awsTestRegion,
+	}); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+
+	testIamAuthClient(t, configuredVault, secretPath)
+}
+
+func testIamAuthClient(t *testing.T, configuredVault *configuredVault, path string) {
 
 	err := os.Setenv("VAULT_ADDR", configuredVault.address)
 	if err != nil {
@@ -57,7 +102,7 @@ func TestIamAuthClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := v.VaultClientOrPanic().Logical().Read("secret/foo")
+	result, err := v.VaultClientOrPanic().Logical().Read(path)
 	if err != nil {
 		t.Fatalf("could not read secret using authed client, error: %s", err)
 	}
