@@ -61,16 +61,14 @@ func newVaultConfiguredForIamAuth(t *testing.T, leaseTtl, maxLeaseTtl string) (*
 		t.Fatal(err)
 	}
 
-	if _, err := client.Logical().Write("auth/aws/config/client", map[string]interface{}{
-		"sts_endpoint": awsTestStsEndpoint,
-		"sts_region":   awsTestRegion,
-	}); err != nil {
-		fmt.Println(err)
-		t.Fatal(err)
-	}
-
 	policy := `
 	path "secret/foo" {
+  		capabilities = ["read", "create"]
+	},
+	path "secret/global" {
+  		capabilities = ["read", "create"]
+	},
+	path "secret/regional" {
   		capabilities = ["read", "create"]
 	}
 `
