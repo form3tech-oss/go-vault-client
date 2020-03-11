@@ -19,6 +19,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1 // indirect
 	github.com/stretchr/testify v1.3.0
+	github.com/urfave/cli/v2 v2.2.0
 	golang.org/x/crypto v0.0.0-20191107222254-f4817d981bb6 // indirect
 	golang.org/x/net v0.0.0-20191108063844-7e6e90b9ea88 // indirect
 	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
