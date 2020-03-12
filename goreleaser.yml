@@ -1,0 +1,15 @@
+builds:
+  -
+    binary: vaultclient
+    main: ./cmd/main.go
+    ldflags:
+      - -extldflags "-static"
+    flags:
+      - -a
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
