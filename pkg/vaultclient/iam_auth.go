@@ -71,7 +71,7 @@ func generateLoginData(stsSession *session.Session) (map[string]interface{}, err
 }
 
 func createFallbackSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
-	return createSessionWithResolver(configuredRegion, creds, globalEndpointSigningResolver)
+	return createSessionWithResolver(configuredRegion, creds, fallbackEndpointSigningResolver)
 }
 
 func createSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
@@ -90,7 +90,7 @@ func createSessionWithResolver(configuredRegion string, creds *credentials.Crede
 	return s, err
 }
 
-func globalEndpointSigningResolver(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+func fallbackEndpointSigningResolver(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
 	return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
 }
 
