@@ -10,13 +10,8 @@ test:
 	@echo "executing tests..."
 	@go test -count 1 -v -timeout 20m github.com/form3tech-oss/go-vault-client/pkg/vaultclient
 
-ifdef CI
-test-cmd:
-	go test -count 1 -v -timeout 1m github.com/form3tech-oss/go-vault-client/cmd/...
-else
 test-cmd:
 	docker-compose up -d && sleep 1 && go test -count 1 -v -timeout 1m github.com/form3tech-oss/go-vault-client/cmd/...; docker-compose down
-endif
 
 release:
 	goreleaser release
