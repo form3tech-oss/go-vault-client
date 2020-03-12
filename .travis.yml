@@ -41,3 +41,14 @@ jobs:
     - eval $(aws ecr get-login --region eu-west-1 --no-include-email)
     - docker run --rm -v $(pwd):/code -e TRAVIS -e SNYK_TOKEN -e REPO=$TRAVIS_REPO_SLUG
       $SECSCAN_IMAGE
+  - stage: Publish
+    if: tag IS present
+    install:
+    - wget https://github.com/goreleaser/goreleaser/releases/download/v0.128.0/goreleaser_amd64.deb
+    - sudo dpkg -i ./goreleaser_amd64.deb
+    - rm goreleaser_amd64.deb
+    - if [[ -a .git/shallow ]]; then git fetch --unshallow --tags; fi
+    script:
+    - eval $(aws ecr get-login --region eu-west-1 --no-include-email)
+    - eval $(aws ecr get-login --region eu-west-2 --no-include-email)
+    - make release
