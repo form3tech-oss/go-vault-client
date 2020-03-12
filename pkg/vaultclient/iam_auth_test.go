@@ -79,6 +79,39 @@ func TestIamAuthWithRegionalEndpointClient(t *testing.T) {
 	testIamAuthClient(t, configuredVault, secretPath)
 }
 
+func TestIamAuthWithFallbackEndpointClient(t *testing.T) {
+	/*
+		This test configures the client as if it is expecting to use a regional VPC endpoint for STS however doesn't
+		configure Vault in this way.
+		The expected result is that the attempt to connect should use the STS_AWS_REGION that is set then on failure
+		fallback to the global endpoint.
+	*/
+	configuredVault, destroy := newVaultConfiguredForIamAuth(t, "1h", "1h")
+	if err := os.Setenv(envVarStsAwsRegion, awsTestRegion); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+	defer destroy()
+
+	// write secret as root
+	secretPath := "secret/fallback"
+	if _, err := configuredVault.rootClient.Logical().Write(secretPath, map[string]interface{}{
+		"foo": "bar",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// write client config
+	if _, err := configuredVault.rootClient.Logical().Write("auth/aws/config/client", map[string]interface{}{
+		"sts_endpoint": "",
+		"sts_region":   "",
+	}); err != nil {
+		fmt.Println(err)
+		t.Fatal(err)
+	}
+	testIamAuthClient(t, configuredVault, secretPath)
+}
+
 func testIamAuthClient(t *testing.T, configuredVault *configuredVault, path string) {
 
 	err := os.Setenv("VAULT_ADDR", configuredVault.address)
