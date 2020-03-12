@@ -1,0 +1,10 @@
+version: '2'
+services:
+
+  vault:
+    image: vault:0.9.3
+    environment:
+      - SKIP_SETCAP=1
+      - VAULT_DEV_ROOT_TOKEN_ID=devtoken
+    ports:
+      - 8200:8200
