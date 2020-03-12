@@ -24,6 +24,6 @@ require (
 	golang.org/x/net v0.0.0-20191108063844-7e6e90b9ea88 // indirect
 	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	google.golang.org/grpc v1.25.0 // indirect
+	google.golang.org/grpc v1.28.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.0 // indirect
 )
