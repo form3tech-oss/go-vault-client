@@ -1,14 +1,16 @@
 language: go
 go:
-- 1.13.x
+- stable
+- master
 cache:
   directories:
   - "$HOME/docker"
+services:
+- docker
 env:
   global:
   - AWS_REGION=eu-west-1
   - AWS_TEST_ROLE_ARN=arn:aws:iam::288840537196:role/go-vault-client-test-role
-  - GO111MODULE=on
   - SECSCAN_IMAGE=288840537196.dkr.ecr.eu-west-1.amazonaws.com/tech.form3/secscan-go:latest
   - secure: pSuLiq65Oc4D6/VxYp/FmmZKzHGlmgX0Gae73XMhT0J9jPmcI7JR957O9f524hMf5xlmW/x9zkhqY7gz4jyeY+mjLm38ltOrtMqmlNxLImyecAypHEfnVHr7j8+BJZE9s+ctoAhJEjo33DYZB9yxFOrKR0jWVpJTq0ATGg/PBIL5KT4uD2mYTMF5OR2Kxkt3D9tYrbDFV4hBwEVKUK7G40s2GpXZKsFgzubXJF78zI4sBulo1I6+o8Egj9BXI8Fa1iI5k5B+3gf34ni00BYoyjQ5JHWs83m4q3Nz1bLq2E6hW9ijo252bSQgGCKY7nxw8swUsHcCaMZHhC/qvUrmVal/eqZ/UTEoXOyhd+GvmmA2CUWztvR0LW2Wc7nnNr52wDR2o1K24VLlvFomiYwVLfO2u1tksXLSrMdl6ZyfX0JwXsaMwcHiXClFOD0W4IwMDsep7VF6DBjML173LYWTYW0BfGdAUNLHKrLsMYjTKLk01xt5Kn0FF47RPPnOZX41gMk9Qv106vElDHT7TxGUvHjG+UrRQftvlBSxpOxoGlKVZE+fG+ca3/hVxPd7zwXJljYs7ddSjrFCHvsziJgGIk//j6JTPDn8hC5B2uC6zwYHzZHLtxSn1EiCd6p76M4r5993wrpsXDIZujpnwFjE3Om5Mtd1leQp6JyN3aCsRj4=
   - secure: kk4TK6fl/GiK8r9aODN9j7SvsQH/pUHp6XyASQcyw+fZkd3pTb7JHnu+vnaf2MM8s81KWWIvBGduvVVQKjtOc94F+7qJ8mavRd1D51mYimyvk2Kn6IogY2Tg05J2Iel9E3csRsYgWzPVUApsOR48TSD9WvKzI4no2h6Tft8rkqg/rYd0E+ZyBZ4Zke98Gc5tosBO1prOqirMkUQnPeG/Ty4F3iiKZ/yWBzrFXTLTBb6p85qN9ATYk4c/SneORh39SqmXFVOQjnMbunjK+u1iAK+1tT/bGh4cgTAeMecfs8o6PDnQRXp3FhinEDpwc7erLLOkkUdbX/hnBf9FE3/BfpyGCx8rJ4k1ixXsxIHnfChrotYzTh3NZhoLbj+K6AqQA89W2RZtP6B43U9cqWafFfBt1w4Vu/9l2JC8zEANEi8B5e6xOjEbUl03SqCH7AyyYB1aMH+e7Wah/HOaSNGa1rgnVFI4DfgxJYoCgV9EPUg0bghbxn28yIEBZSf76JXkmBNAbNxtkHuzn9eVg3wyTThUbk1BW9CoRcxajkNV/WBzB6MGcogHTi7GK1fLNVUh+Y0Lqe5hkwIY9BdOaih0TETltjuQ9/tOmphTXxRDZ+VUJw+X3v59Gg/1CAtc41uwLcC6/OhOb3XmbyefDUU+x2ZrP02NZ6MtYGqui546Skk=
