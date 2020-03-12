@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -12,8 +15,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/helper/awsutil"
-	"io/ioutil"
-	"os"
 )
 
 func (v *iamAuth) login(session *session.Session) (*api.Secret, error) {
@@ -34,7 +35,7 @@ func (v *iamAuth) loginWithFallback(session *session.Session) (*api.Secret, erro
 	}
 	resp, err := v.login(stsSession)
 	if err != nil {
-		stsSession, err = createFallbackSession(creds, configuredRegion)
+		stsSession, err = createSessionWithResolver(creds, configuredRegion, fallbackEndpointSigningResolver)
 		if err != nil {
 			return nil, err
 		}
@@ -70,15 +71,11 @@ func generateLoginData(stsSession *session.Session) (map[string]interface{}, err
 	return loginData, nil
 }
 
-func createFallbackSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
-	return createSessionWithResolver(configuredRegion, creds, fallbackEndpointSigningResolver)
-}
-
 func createSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
-	return createSessionWithResolver(configuredRegion, creds, endpointSigningResolver)
+	return createSessionWithResolver(creds, configuredRegion, endpointSigningResolver)
 }
 
-func createSessionWithResolver(configuredRegion string, creds *credentials.Credentials, resolver func(service string, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error)) (*session.Session, error) {
+func createSessionWithResolver(creds *credentials.Credentials, configuredRegion string, resolver func(service string, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error)) (*session.Session, error) {
 	region := awsutil.GetOrDefaultRegion(hclog.Default(), configuredRegion)
 	s, err := session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{
