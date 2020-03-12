@@ -1,19 +1,9 @@
 package vaultclient
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault/helper/awsutil"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/hashicorp/vault/api"
@@ -146,16 +136,9 @@ func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 }
 
 func (v *iamAuth) getAuth() (*Auth, error) {
-	s := session.Must(session.NewSession())
+	baseSession := session.Must(session.NewSession())
 
-	data, err := generateLoginData(s.Config.Credentials, os.Getenv(envVarAwsRegion))
-	if err != nil {
-		return nil, nil
-	}
-
-	data["role"] = v.role
-
-	resp, err := v.client.Logical().Write("auth/aws/login", data)
+	resp, err := v.loginWithFallback(baseSession)
 	if err != nil {
 		return nil, err
 	}
@@ -169,66 +152,6 @@ func (v *iamAuth) getAuth() (*Auth, error) {
 		token:  resp.Auth.ClientToken,
 		expiry: time.Now().UTC().Add(tokenTtl),
 	}, nil
-}
-
-func endpointSigningResolver(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-	defaultEndpoint, err := endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
-	if err != nil {
-		return defaultEndpoint, err
-	}
-	defaultEndpoint.SigningName = service
-	stsRegion, present := os.LookupEnv(envVarStsAwsRegion)
-	if present {
-		defaultEndpoint.SigningRegion = stsRegion
-		defaultEndpoint.URL = fmt.Sprintf("https://%s.%v.amazonaws.com", service, stsRegion)
-	}
-	return defaultEndpoint, nil
-}
-
-func generateLoginData(creds *credentials.Credentials, configuredRegion string) (map[string]interface{}, error) {
-	loginData := make(map[string]interface{})
-
-	stsSession, err := createSession(creds, configuredRegion)
-	if err != nil {
-		return nil, err
-	}
-
-	var params *sts.GetCallerIdentityInput
-	svc := sts.New(stsSession)
-	stsRequest, _ := svc.GetCallerIdentityRequest(params)
-	err = stsRequest.Sign()
-	if err != nil {
-		return nil, err
-	}
-
-	// Now extract out the relevant parts of the request
-	headersJson, err := json.Marshal(stsRequest.HTTPRequest.Header)
-	if err != nil {
-		return nil, err
-	}
-	requestBody, err := ioutil.ReadAll(stsRequest.HTTPRequest.Body)
-	if err != nil {
-		return nil, err
-	}
-	loginData["iam_http_request_method"] = stsRequest.HTTPRequest.Method
-	loginData["iam_request_url"] = base64.StdEncoding.EncodeToString([]byte(stsRequest.HTTPRequest.URL.String()))
-	loginData["iam_request_headers"] = base64.StdEncoding.EncodeToString(headersJson)
-	loginData["iam_request_body"] = base64.StdEncoding.EncodeToString(requestBody)
-
-	return loginData, nil
-}
-
-func createSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
-	// Use the credentials we've found to construct an STS session
-	region := awsutil.GetOrDefaultRegion(hclog.Default(), configuredRegion)
-	s, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Credentials:      creds,
-			Region:           &region,
-			EndpointResolver: endpoints.ResolverFunc(endpointSigningResolver),
-		},
-	})
-	return s, err
 }
 
 func (v *Auth) IsTokenExpired() bool {

@@ -70,6 +70,9 @@ func newVaultConfiguredForIamAuth(t *testing.T, leaseTtl, maxLeaseTtl string) (*
 	},
 	path "secret/regional" {
   		capabilities = ["read", "create"]
+	},
+	path "secret/fallback" {
+		capabilities = ["read", "create"]
 	}
 `
 	if err := client.Sys().PutPolicy("foowriter", policy); err != nil {
