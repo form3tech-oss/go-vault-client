@@ -1,10 +1,9 @@
-module github.com/form3tech-oss/go-vault-client
+module github.com/form3tech-oss/go-vault-client/v4
 
 go 1.13
 
 require (
 	github.com/aws/aws-sdk-go v1.19.39
-	github.com/go-ini/ini v1.25.4 // indirect
 	github.com/hashicorp/consul/sdk v0.2.0
 	github.com/hashicorp/go-hclog v0.10.0
 	github.com/hashicorp/go-memdb v1.0.4 // indirect

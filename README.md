@@ -1,15 +1,22 @@
 # go-vault-client
+
 Gives you an authenticated vault client (iam/token)
 
+## Usage
 
-# Usage
 go-vault-client supports three modes of authentication:
 
 * [`AppRole`](https://www.vaultproject.io/docs/auth/approle.html)
 * [`Token`](https://www.vaultproject.io/docs/auth/token.html)
 * [`IAM (AWS)`](https://www.vaultproject.io/docs/auth/aws.html)
 
-##  Configuration
+## Install
+
+```bash
+go get -u github.com/form3tech-oss/go-vault-client/v4
+```
+
+## Configuration
 
 The configuration object used by this client is a superset of the Vault `api.Config` struct.
 

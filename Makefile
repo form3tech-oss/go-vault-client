@@ -8,10 +8,10 @@ default: test test-cmd
 
 test:
 	@echo "executing tests..."
-	@go test -count 1 -v -timeout 20m github.com/form3tech-oss/go-vault-client/pkg/vaultclient
+	@go test -count 1 -v -timeout 20m ./pkg/vaultclient
 
 test-cmd:
-	docker-compose up -d && sleep 1 && go test -count 1 -v -timeout 1m github.com/form3tech-oss/go-vault-client/cmd/...; docker-compose down
+	docker-compose up -d && sleep 1 && go test -count 1 -v -timeout 1m ./cmd/...; docker-compose down
 
 release:
 	goreleaser release

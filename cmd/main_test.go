@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	vc "github.com/form3tech-oss/go-vault-client/pkg/vaultclient"
+	vc "github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient"
 	"github.com/stretchr/testify/assert"
 )
 
