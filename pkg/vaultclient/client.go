@@ -132,7 +132,7 @@ func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 		}, nil
 
 	}
-	return nil, fmt.Errorf("unkown auth type %s", string(cfg.AuthType))
+	return nil, fmt.Errorf("unknown auth type '%s'", string(cfg.AuthType))
 }
 
 func (v *iamAuth) getAuth() (*Auth, error) {
