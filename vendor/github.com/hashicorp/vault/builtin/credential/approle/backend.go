@@ -3,13 +3,12 @@ package approle
 import (
 	"context"
 	"sync"
-	"time"
 
-	"github.com/hashicorp/vault/helper/consts"
-	"github.com/hashicorp/vault/helper/locksutil"
-	"github.com/hashicorp/vault/helper/salt"
-	"github.com/hashicorp/vault/logical"
-	"github.com/hashicorp/vault/logical/framework"
+	"github.com/hashicorp/vault/sdk/framework"
+	"github.com/hashicorp/vault/sdk/helper/consts"
+	"github.com/hashicorp/vault/sdk/helper/locksutil"
+	"github.com/hashicorp/vault/sdk/helper/salt"
+	"github.com/hashicorp/vault/sdk/logical"
 )
 
 const (
@@ -57,8 +56,6 @@ type backend struct {
 	// secretIDListingLock is a dedicated lock for listing SecretIDAccessors
 	// for all the SecretIDs issued against an approle
 	secretIDListingLock sync.RWMutex
-
-	testTidyDelay time.Duration
 }
 
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {

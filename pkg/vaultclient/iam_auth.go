@@ -12,9 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/api"
-	"github.com/hashicorp/vault/helper/awsutil"
+	"github.com/hashicorp/vault/sdk/helper/awsutil"
 )
 
 func (v *iamAuth) login(session *session.Session) (*api.Secret, error) {
@@ -76,7 +75,10 @@ func createSession(creds *credentials.Credentials, configuredRegion string) (*se
 }
 
 func createSessionWithResolver(creds *credentials.Credentials, configuredRegion string, resolver func(service string, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error)) (*session.Session, error) {
-	region := awsutil.GetOrDefaultRegion(hclog.Default(), configuredRegion)
+	region, err := awsutil.GetRegion(configuredRegion)
+	if err != nil {
+		return nil, err
+	}
 	s, err := session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{
 			Credentials:      creds,

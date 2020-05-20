@@ -2,11 +2,15 @@
 github.com/Jeffail/gabs/v2
 # github.com/NYTimes/gziphandler v1.1.1
 github.com/NYTimes/gziphandler
-# github.com/armon/go-metrics v0.3.0
+# github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
+github.com/StackExchange/wmi
+# github.com/armon/go-metrics v0.3.1
 github.com/armon/go-metrics
+# github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
+github.com/armon/go-proxyproto
 # github.com/armon/go-radix v1.0.0
 github.com/armon/go-radix
-# github.com/aws/aws-sdk-go v1.15.55
+# github.com/aws/aws-sdk-go v1.25.41
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
@@ -16,6 +20,7 @@ github.com/aws/aws-sdk-go/aws/corehandlers
 github.com/aws/aws-sdk-go/aws/credentials
 github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
 github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
+github.com/aws/aws-sdk-go/aws/credentials/processcreds
 github.com/aws/aws-sdk-go/aws/credentials/stscreds
 github.com/aws/aws-sdk-go/aws/csm
 github.com/aws/aws-sdk-go/aws/defaults
@@ -24,12 +29,15 @@ github.com/aws/aws-sdk-go/aws/endpoints
 github.com/aws/aws-sdk-go/aws/request
 github.com/aws/aws-sdk-go/aws/session
 github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/internal/ini
 github.com/aws/aws-sdk-go/internal/sdkio
+github.com/aws/aws-sdk-go/internal/sdkmath
 github.com/aws/aws-sdk-go/internal/sdkrand
 github.com/aws/aws-sdk-go/internal/sdkuri
 github.com/aws/aws-sdk-go/internal/shareddefaults
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/ec2query
+github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
 github.com/aws/aws-sdk-go/private/protocol/query
 github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol/rest
@@ -37,10 +45,15 @@ github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
 github.com/aws/aws-sdk-go/service/ec2
 github.com/aws/aws-sdk-go/service/iam
 github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
-# github.com/cespare/xxhash/v2 v2.1.0
+# github.com/bgentry/speakeasy v0.1.0
+github.com/bgentry/speakeasy
+# github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
+# github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
+github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/elazarl/go-bindata-assetfs v1.0.0
@@ -49,11 +62,17 @@ github.com/elazarl/go-bindata-assetfs
 github.com/fatih/color
 # github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 github.com/fullsailor/pkcs7
-# github.com/go-ini/ini v1.25.4
-github.com/go-ini/ini
+# github.com/go-ole/go-ole v1.2.1
+github.com/go-ole/go-ole
+github.com/go-ole/go-ole/oleutil
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
-# github.com/golang/protobuf v1.3.2
+# github.com/go-test/deep v1.0.2
+github.com/go-test/deep
+# github.com/gogo/protobuf v1.2.1
+github.com/gogo/protobuf/io
+github.com/gogo/protobuf/proto
+# github.com/golang/protobuf v1.3.3
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
@@ -67,24 +86,35 @@ github.com/hashicorp/consul/sdk/testutil/retry
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-cleanhttp v0.5.1
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-hclog v0.10.0
+# github.com/hashicorp/go-hclog v0.12.0
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-immutable-radix v1.1.0
 github.com/hashicorp/go-immutable-radix
+# github.com/hashicorp/go-kms-wrapping v0.5.1
+github.com/hashicorp/go-kms-wrapping
+github.com/hashicorp/go-kms-wrapping/internal/xor
+github.com/hashicorp/go-kms-wrapping/wrappers/aead
+# github.com/hashicorp/go-kms-wrapping/entropy v0.1.0
+github.com/hashicorp/go-kms-wrapping/entropy
 # github.com/hashicorp/go-memdb v1.0.4
 github.com/hashicorp/go-memdb
+# github.com/hashicorp/go-msgpack v0.5.5
+github.com/hashicorp/go-msgpack/codec
 # github.com/hashicorp/go-multierror v1.0.0
 github.com/hashicorp/go-multierror
 # github.com/hashicorp/go-plugin v1.0.1
 github.com/hashicorp/go-plugin
 github.com/hashicorp/go-plugin/internal/plugin
+# github.com/hashicorp/go-raftchunking v0.6.3-0.20191002164813-7e9e8525653a
+github.com/hashicorp/go-raftchunking
+github.com/hashicorp/go-raftchunking/types
 # github.com/hashicorp/go-retryablehttp v0.6.3
 github.com/hashicorp/go-retryablehttp
-# github.com/hashicorp/go-rootcerts v1.0.1
+# github.com/hashicorp/go-rootcerts v1.0.2
 github.com/hashicorp/go-rootcerts
 # github.com/hashicorp/go-sockaddr v1.0.2
 github.com/hashicorp/go-sockaddr
-# github.com/hashicorp/go-uuid v1.0.1
+# github.com/hashicorp/go-uuid v1.0.2
 github.com/hashicorp/go-uuid
 # github.com/hashicorp/go-version v1.2.0
 github.com/hashicorp/go-version
@@ -101,68 +131,86 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/hashicorp/vault v1.1.3
-github.com/hashicorp/vault/api
+# github.com/hashicorp/raft v1.1.2-0.20191002163536-9c6bd3e3eb17
+github.com/hashicorp/raft
+# github.com/hashicorp/raft-snapshot v1.0.2-0.20190827162939-8117efcc5aab
+github.com/hashicorp/raft-snapshot
+# github.com/hashicorp/vault v1.4.1
 github.com/hashicorp/vault/audit
 github.com/hashicorp/vault/builtin/credential/approle
 github.com/hashicorp/vault/builtin/credential/aws
-github.com/hashicorp/vault/builtin/logical/database/dbplugin
 github.com/hashicorp/vault/builtin/plugin
-github.com/hashicorp/vault/helper/awsutil
-github.com/hashicorp/vault/helper/base62
-github.com/hashicorp/vault/helper/certutil
-github.com/hashicorp/vault/helper/cidrutil
-github.com/hashicorp/vault/helper/compressutil
-github.com/hashicorp/vault/helper/consts
-github.com/hashicorp/vault/helper/cryptoutil
-github.com/hashicorp/vault/helper/dbtxn
-github.com/hashicorp/vault/helper/errutil
+github.com/hashicorp/vault/command/server
 github.com/hashicorp/vault/helper/forwarding
-github.com/hashicorp/vault/helper/hclutil
+github.com/hashicorp/vault/helper/hostutil
 github.com/hashicorp/vault/helper/identity
 github.com/hashicorp/vault/helper/identity/mfa
-github.com/hashicorp/vault/helper/jsonutil
-github.com/hashicorp/vault/helper/license
-github.com/hashicorp/vault/helper/locksutil
-github.com/hashicorp/vault/helper/logging
 github.com/hashicorp/vault/helper/metricsutil
-github.com/hashicorp/vault/helper/mlock
 github.com/hashicorp/vault/helper/namespace
-github.com/hashicorp/vault/helper/parseutil
-github.com/hashicorp/vault/helper/pathmanager
 github.com/hashicorp/vault/helper/pgpkeys
-github.com/hashicorp/vault/helper/pluginutil
-github.com/hashicorp/vault/helper/policyutil
-github.com/hashicorp/vault/helper/reload
-github.com/hashicorp/vault/helper/salt
+github.com/hashicorp/vault/helper/proxyutil
 github.com/hashicorp/vault/helper/storagepacker
-github.com/hashicorp/vault/helper/strutil
-github.com/hashicorp/vault/helper/tlsutil
-github.com/hashicorp/vault/helper/wrapping
 github.com/hashicorp/vault/helper/xor
 github.com/hashicorp/vault/http
-github.com/hashicorp/vault/logical
-github.com/hashicorp/vault/logical/framework
-github.com/hashicorp/vault/logical/plugin
-github.com/hashicorp/vault/logical/plugin/pb
-github.com/hashicorp/vault/physical
-github.com/hashicorp/vault/physical/inmem
-github.com/hashicorp/vault/plugins
+github.com/hashicorp/vault/internalshared/listenerutil
+github.com/hashicorp/vault/internalshared/reloadutil
+github.com/hashicorp/vault/physical/raft
+github.com/hashicorp/vault/physical/raft/logstore
 github.com/hashicorp/vault/plugins/database/mysql
 github.com/hashicorp/vault/plugins/database/postgresql
-github.com/hashicorp/vault/plugins/helper/database/connutil
-github.com/hashicorp/vault/plugins/helper/database/credsutil
-github.com/hashicorp/vault/plugins/helper/database/dbutil
+github.com/hashicorp/vault/serviceregistration
 github.com/hashicorp/vault/shamir
 github.com/hashicorp/vault/vault
+github.com/hashicorp/vault/vault/cluster
 github.com/hashicorp/vault/vault/replication
 github.com/hashicorp/vault/vault/seal
-github.com/hashicorp/vault/version
-# github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb
+# github.com/hashicorp/vault/api v1.0.5-0.20200430075121-b2b4ab9577e4
+github.com/hashicorp/vault/api
+# github.com/hashicorp/vault/sdk v0.1.14-0.20200430075121-b2b4ab9577e4
+github.com/hashicorp/vault/sdk/database/dbplugin
+github.com/hashicorp/vault/sdk/database/helper/connutil
+github.com/hashicorp/vault/sdk/database/helper/credsutil
+github.com/hashicorp/vault/sdk/database/helper/dbutil
+github.com/hashicorp/vault/sdk/framework
+github.com/hashicorp/vault/sdk/helper/authmetadata
+github.com/hashicorp/vault/sdk/helper/awsutil
+github.com/hashicorp/vault/sdk/helper/base62
+github.com/hashicorp/vault/sdk/helper/certutil
+github.com/hashicorp/vault/sdk/helper/cidrutil
+github.com/hashicorp/vault/sdk/helper/compressutil
+github.com/hashicorp/vault/sdk/helper/consts
+github.com/hashicorp/vault/sdk/helper/cryptoutil
+github.com/hashicorp/vault/sdk/helper/dbtxn
+github.com/hashicorp/vault/sdk/helper/errutil
+github.com/hashicorp/vault/sdk/helper/hclutil
+github.com/hashicorp/vault/sdk/helper/identitytpl
+github.com/hashicorp/vault/sdk/helper/jsonutil
+github.com/hashicorp/vault/sdk/helper/license
+github.com/hashicorp/vault/sdk/helper/locksutil
+github.com/hashicorp/vault/sdk/helper/logging
+github.com/hashicorp/vault/sdk/helper/mlock
+github.com/hashicorp/vault/sdk/helper/parseutil
+github.com/hashicorp/vault/sdk/helper/pathmanager
+github.com/hashicorp/vault/sdk/helper/pluginutil
+github.com/hashicorp/vault/sdk/helper/policyutil
+github.com/hashicorp/vault/sdk/helper/salt
+github.com/hashicorp/vault/sdk/helper/strutil
+github.com/hashicorp/vault/sdk/helper/tlsutil
+github.com/hashicorp/vault/sdk/helper/tokenutil
+github.com/hashicorp/vault/sdk/helper/wrapping
+github.com/hashicorp/vault/sdk/logical
+github.com/hashicorp/vault/sdk/physical
+github.com/hashicorp/vault/sdk/physical/inmem
+github.com/hashicorp/vault/sdk/plugin
+github.com/hashicorp/vault/sdk/plugin/pb
+github.com/hashicorp/vault/sdk/version
+# github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
 github.com/hashicorp/yamux
+# github.com/jefferai/isbadcipher v0.0.0-20190226160619-51d2077c035f
+github.com/jefferai/isbadcipher
 # github.com/jefferai/jsonx v1.0.1
 github.com/jefferai/jsonx
-# github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8
+# github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 github.com/jmespath/go-jmespath
 # github.com/keybase/go-crypto v0.0.0-20190828182435-a05457805304
 github.com/keybase/go-crypto/brainpool
@@ -188,6 +236,8 @@ github.com/mattn/go-colorable
 github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/mitchellh/cli v1.0.0
+github.com/mitchellh/cli
 # github.com/mitchellh/copystructure v1.0.0
 github.com/mitchellh/copystructure
 # github.com/mitchellh/go-homedir v1.1.0
@@ -209,36 +259,63 @@ github.com/pierrec/lz4/internal/xxh32
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.2.1
+# github.com/posener/complete v1.2.1
+github.com/posener/complete
+github.com/posener/complete/cmd
+github.com/posener/complete/cmd/install
+github.com/posener/complete/match
+# github.com/prometheus/client_golang v1.4.0
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
+# github.com/prometheus/client_model v0.2.0
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.7.0
+# github.com/prometheus/common v0.9.1
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.0.5
+# github.com/prometheus/procfs v0.0.8
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/russross/blackfriday/v2 v2.0.1
+github.com/russross/blackfriday/v2
 # github.com/ryanuber/go-glob v1.0.0
 github.com/ryanuber/go-glob
-# github.com/stretchr/testify v1.3.0
+# github.com/shirou/gopsutil v2.19.9+incompatible
+github.com/shirou/gopsutil/cpu
+github.com/shirou/gopsutil/disk
+github.com/shirou/gopsutil/host
+github.com/shirou/gopsutil/internal/common
+github.com/shirou/gopsutil/mem
+github.com/shirou/gopsutil/net
+github.com/shirou/gopsutil/process
+# github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
+github.com/shirou/w32
+# github.com/shurcooL/sanitized_anchor_name v1.0.0
+github.com/shurcooL/sanitized_anchor_name
+# github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# golang.org/x/crypto v0.0.0-20191107222254-f4817d981bb6
+# github.com/urfave/cli/v2 v2.2.0
+github.com/urfave/cli/v2
+# go.etcd.io/bbolt v1.3.3
+go.etcd.io/bbolt
+# go.uber.org/atomic v1.4.0
+go.uber.org/atomic
+# golang.org/x/crypto v0.0.0-20200117160349-530e935923ad
 golang.org/x/crypto/blake2b
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/cryptobyte
+golang.org/x/crypto/cryptobyte/asn1
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
-golang.org/x/crypto/internal/chacha20
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
-# golang.org/x/net v0.0.0-20191108063844-7e6e90b9ea88
+# golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -246,23 +323,24 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
+# golang.org/x/sys v0.0.0-20200122134326-e047566fdf82
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.0
+# golang.org/x/text v0.3.2
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# google.golang.org/appengine v1.4.0
+# google.golang.org/appengine v1.6.0
 google.golang.org/appengine/cloudsql
 # google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.25.0
+# google.golang.org/grpc v1.28.0
 google.golang.org/grpc
+google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
@@ -284,8 +362,10 @@ google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
 google.golang.org/grpc/internal/syscall
@@ -299,8 +379,10 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# gopkg.in/square/go-jose.v2 v2.4.0
+# gopkg.in/square/go-jose.v2 v2.4.1
 gopkg.in/square/go-jose.v2
 gopkg.in/square/go-jose.v2/cipher
 gopkg.in/square/go-jose.v2/json
 gopkg.in/square/go-jose.v2/jwt
+# gopkg.in/yaml.v2 v2.2.5
+gopkg.in/yaml.v2

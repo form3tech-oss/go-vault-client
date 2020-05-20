@@ -4,18 +4,20 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	metrics "github.com/armon/go-metrics"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/hashicorp/errwrap"
 	log "github.com/hashicorp/go-hclog"
-	memdb "github.com/hashicorp/go-memdb"
-	"github.com/hashicorp/vault/helper/consts"
+	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/vault/helper/identity"
 	"github.com/hashicorp/vault/helper/namespace"
 	"github.com/hashicorp/vault/helper/storagepacker"
-	"github.com/hashicorp/vault/helper/strutil"
-	"github.com/hashicorp/vault/logical"
-	"github.com/hashicorp/vault/logical/framework"
+	"github.com/hashicorp/vault/sdk/framework"
+	"github.com/hashicorp/vault/sdk/helper/consts"
+	"github.com/hashicorp/vault/sdk/helper/strutil"
+	"github.com/hashicorp/vault/sdk/logical"
 )
 
 const (
@@ -23,6 +25,7 @@ const (
 )
 
 var (
+	caseSensitivityKey           = "casesensitivity"
 	sendGroupUpgrade             = func(*IdentityStore, *identity.Group) (bool, error) { return false, nil }
 	parseExtraEntityFromBucket   = func(context.Context, *IdentityStore, *identity.Entity) (bool, error) { return false, nil }
 	addExtraEntityDataToResponse = func(*identity.Entity, map[string]interface{}) {}
@@ -72,10 +75,23 @@ func NewIdentityStore(ctx context.Context, core *Core, config *logical.BackendCo
 	}
 
 	iStore.Backend = &framework.Backend{
-		BackendType: logical.TypeLogical,
-		Paths:       iStore.paths(),
-		Invalidate:  iStore.Invalidate,
+		BackendType:    logical.TypeLogical,
+		Paths:          iStore.paths(),
+		Invalidate:     iStore.Invalidate,
+		InitializeFunc: iStore.initialize,
+		PathsSpecial: &logical.Paths{
+			Unauthenticated: []string{
+				"oidc/.well-known/*",
+			},
+		},
+		PeriodicFunc: func(ctx context.Context, req *logical.Request) error {
+			iStore.oidcPeriodicFunc(ctx)
+
+			return nil
+		},
 	}
+
+	iStore.oidcCache = newOIDCCache()
 
 	err = iStore.Setup(ctx, config)
 	if err != nil {
@@ -93,7 +109,24 @@ func (i *IdentityStore) paths() []*framework.Path {
 		groupPaths(i),
 		lookupPaths(i),
 		upgradePaths(i),
+		oidcPaths(i),
 	)
+}
+
+func (i *IdentityStore) initialize(ctx context.Context, req *logical.InitializationRequest) error {
+	// Only primary should write the status
+	if i.System().ReplicationState().HasState(consts.ReplicationPerformanceSecondary | consts.ReplicationPerformanceStandby | consts.ReplicationDRSecondary) {
+		return nil
+	}
+
+	entry, err := logical.StorageEntryJSON(caseSensitivityKey, &casesensitivity{
+		DisableLowerCasedNames: i.disableLowerCasedNames,
+	})
+	if err != nil {
+		return err
+	}
+
+	return i.view.Put(ctx, entry)
 }
 
 // Invalidate is a callback wherein the backend is informed that the value at
@@ -107,15 +140,43 @@ func (i *IdentityStore) Invalidate(ctx context.Context, key string) {
 	defer i.lock.Unlock()
 
 	switch {
-	// Check if the key is a storage entry key for an entity bucket
-	case strings.HasPrefix(key, storagepacker.StoragePackerBucketsPrefix):
-		// Get the hash value of the storage bucket entry key
-		bucketKeyHash := i.entityPacker.BucketKeyHashByKey(key)
-		if len(bucketKeyHash) == 0 {
-			i.logger.Error("failed to get the bucket entry key hash")
+	case key == caseSensitivityKey:
+		entry, err := i.view.Get(ctx, caseSensitivityKey)
+		if err != nil {
+			i.logger.Error("failed to read case sensitivity setting during invalidation", "error", err)
+			return
+		}
+		if entry == nil {
 			return
 		}
 
+		var setting casesensitivity
+		if err := entry.DecodeJSON(&setting); err != nil {
+			i.logger.Error("failed to decode case sensitivity setting during invalidation", "error", err)
+			return
+		}
+
+		// Fast return if the setting is the same
+		if i.disableLowerCasedNames == setting.DisableLowerCasedNames {
+			return
+		}
+
+		// If the setting is different, reset memdb and reload all the artifacts
+		i.disableLowerCasedNames = setting.DisableLowerCasedNames
+		if err := i.resetDB(ctx); err != nil {
+			i.logger.Error("failed to reset memdb during invalidation", "error", err)
+			return
+		}
+		if err := i.loadEntities(ctx); err != nil {
+			i.logger.Error("failed to load entities during invalidation", "error", err)
+			return
+		}
+		if err := i.loadGroups(ctx); err != nil {
+			i.logger.Error("failed to load groups during invalidation", "error", err)
+			return
+		}
+	// Check if the key is a storage entry key for an entity bucket
+	case strings.HasPrefix(key, storagepacker.StoragePackerBucketsPrefix):
 		// Create a MemDB transaction
 		txn := i.db.Txn(true)
 		defer txn.Abort()
@@ -124,9 +185,9 @@ func (i *IdentityStore) Invalidate(ctx context.Context, key string) {
 		// entry key of the entity bucket. Fetch all the entities that
 		// belong to this bucket using the hash value. Remove these entities
 		// from MemDB along with all the aliases of each entity.
-		entitiesFetched, err := i.MemDBEntitiesByBucketEntryKeyHashInTxn(txn, string(bucketKeyHash))
+		entitiesFetched, err := i.MemDBEntitiesByBucketKeyInTxn(txn, key)
 		if err != nil {
-			i.logger.Error("failed to fetch entities using the bucket entry key hash", "bucket_entry_key_hash", bucketKeyHash)
+			i.logger.Error("failed to fetch entities using the bucket key", "key", key)
 			return
 		}
 
@@ -183,20 +244,13 @@ func (i *IdentityStore) Invalidate(ctx context.Context, key string) {
 
 	// Check if the key is a storage entry key for an group bucket
 	case strings.HasPrefix(key, groupBucketsPrefix):
-		// Get the hash value of the storage bucket entry key
-		bucketKeyHash := i.groupPacker.BucketKeyHashByKey(key)
-		if len(bucketKeyHash) == 0 {
-			i.logger.Error("failed to get the bucket entry key hash")
-			return
-		}
-
 		// Create a MemDB transaction
 		txn := i.db.Txn(true)
 		defer txn.Abort()
 
-		groupsFetched, err := i.MemDBGroupsByBucketEntryKeyHashInTxn(txn, string(bucketKeyHash))
+		groupsFetched, err := i.MemDBGroupsByBucketKeyInTxn(txn, key)
 		if err != nil {
-			i.logger.Error("failed to fetch groups using the bucket entry key hash", "bucket_entry_key_hash", bucketKeyHash)
+			i.logger.Error("failed to fetch groups using the bucket key", "key", key)
 			return
 		}
 
@@ -251,7 +305,7 @@ func (i *IdentityStore) Invalidate(ctx context.Context, key string) {
 				}
 
 				// Only update MemDB and don't touch the storage
-				err = i.UpsertGroupInTxn(txn, group, false)
+				err = i.UpsertGroupInTxn(ctx, txn, group, false)
 				if err != nil {
 					i.logger.Error("failed to update group in MemDB", "error", err)
 					return
@@ -261,6 +315,19 @@ func (i *IdentityStore) Invalidate(ctx context.Context, key string) {
 
 		txn.Commit()
 		return
+
+	case strings.HasPrefix(key, oidcTokensPrefix):
+		ns, err := namespace.FromContext(ctx)
+		if err != nil {
+			i.logger.Error("error retrieving namespace", "error", err)
+			return
+		}
+
+		// Wipe the cache for the requested namespace. This will also clear
+		// the shared namespace as well.
+		if err := i.oidcCache.Flush(ns); err != nil {
+			i.logger.Error("error flushing oidc cache", "error", err)
+		}
 	}
 }
 
@@ -294,7 +361,7 @@ func (i *IdentityStore) parseEntityFromBucketItem(ctx context.Context, item *sto
 		entity.LastUpdateTime = oldEntity.LastUpdateTime
 		entity.MergedEntityIDs = oldEntity.MergedEntityIDs
 		entity.Policies = oldEntity.Policies
-		entity.BucketKeyHash = oldEntity.BucketKeyHash
+		entity.BucketKey = oldEntity.BucketKeyHash
 		entity.MFASecrets = oldEntity.MFASecrets
 		// Copy each alias individually since the format of aliases were
 		// also different
@@ -336,7 +403,7 @@ func (i *IdentityStore) parseEntityFromBucketItem(ctx context.Context, item *sto
 		}
 
 		// Store the entity with new format
-		err = i.entityPacker.PutItem(item)
+		err = i.entityPacker.PutItem(ctx, item)
 		if err != nil {
 			return nil, err
 		}
@@ -413,6 +480,8 @@ func (i *IdentityStore) entityByAliasFactorsInTxn(txn *memdb.Txn, mountAccessor,
 // CreateOrFetchEntity creates a new entity. This is used by core to
 // associate each login attempt by an alias to a unified entity in Vault.
 func (i *IdentityStore) CreateOrFetchEntity(ctx context.Context, alias *logical.Alias) (*identity.Entity, error) {
+	defer metrics.MeasureSince([]string{"identity", "create_or_fetch_entity"}, time.Now())
+
 	var entity *identity.Entity
 	var err error
 	var update bool

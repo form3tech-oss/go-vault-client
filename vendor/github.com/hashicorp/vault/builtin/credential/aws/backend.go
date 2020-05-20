@@ -3,16 +3,17 @@ package awsauth
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/hashicorp/vault/helper/awsutil"
-	"github.com/hashicorp/vault/helper/consts"
-	"github.com/hashicorp/vault/logical"
-	"github.com/hashicorp/vault/logical/framework"
+	"github.com/hashicorp/vault/sdk/framework"
+	"github.com/hashicorp/vault/sdk/helper/awsutil"
+	"github.com/hashicorp/vault/sdk/helper/consts"
+	"github.com/hashicorp/vault/sdk/logical"
 	cache "github.com/patrickmn/go-cache"
 )
 
@@ -34,7 +35,7 @@ type backend struct {
 	configMutex sync.RWMutex
 
 	// Lock to make changes to role entries
-	roleMutex sync.RWMutex
+	roleMutex sync.Mutex
 
 	// Lock to make changes to the blacklist entries
 	blacklistMutex sync.RWMutex
@@ -64,6 +65,11 @@ type backend struct {
 	// will be flushed. The empty STS role signifies the master account
 	IAMClientsMap map[string]map[string]*iam.IAM
 
+	// Map to associate a partition to a random region in that partition. Users of
+	// this don't care what region in the partition they use, but there is some client
+	// cache efficiency gain if we keep the mapping stable, hence caching a single copy.
+	partitionToRegionMap map[string]*endpoints.Region
+
 	// Map of AWS unique IDs to the full ARN corresponding to that unique ID
 	// This avoids the overhead of an AWS API hit for every login request
 	// using the IAM auth method when bound_iam_principal_arn contains a wildcard
@@ -76,10 +82,17 @@ type backend struct {
 	// accounts using their IAM instance profile to get their credentials.
 	defaultAWSAccountID string
 
+	// roleCache caches role entries to avoid locking headaches
+	roleCache *cache.Cache
+
 	resolveArnToUniqueIDFunc func(context.Context, logical.Storage, string) (string, error)
+
+	// upgradeCancelFunc is used to cancel the context used in the upgrade
+	// function
+	upgradeCancelFunc context.CancelFunc
 }
 
-func Backend(conf *logical.BackendConfig) (*backend, error) {
+func Backend(_ *logical.BackendConfig) (*backend, error) {
 	b := &backend{
 		// Setting the periodic func to be run once in an hour.
 		// If there is a real need, this can be made configurable.
@@ -89,6 +102,7 @@ func Backend(conf *logical.BackendConfig) (*backend, error) {
 		iamUserIdToArnCache:   cache.New(7*24*time.Hour, 24*time.Hour),
 		tidyBlacklistCASGuard: new(uint32),
 		tidyWhitelistCASGuard: new(uint32),
+		roleCache:             cache.New(cache.NoExpiration, cache.NoExpiration),
 	}
 
 	b.resolveArnToUniqueIDFunc = b.resolveArnToRealUniqueId
@@ -109,29 +123,33 @@ func Backend(conf *logical.BackendConfig) (*backend, error) {
 			},
 		},
 		Paths: []*framework.Path{
-			pathLogin(b),
-			pathListRole(b),
-			pathListRoles(b),
-			pathRole(b),
-			pathRoleTag(b),
-			pathConfigClient(b),
-			pathConfigCertificate(b),
-			pathConfigIdentity(b),
-			pathConfigSts(b),
-			pathListSts(b),
-			pathConfigTidyRoletagBlacklist(b),
-			pathConfigTidyIdentityWhitelist(b),
-			pathListCertificates(b),
-			pathListRoletagBlacklist(b),
-			pathRoletagBlacklist(b),
-			pathTidyRoletagBlacklist(b),
-			pathListIdentityWhitelist(b),
-			pathIdentityWhitelist(b),
-			pathTidyIdentityWhitelist(b),
+			b.pathLogin(),
+			b.pathListRole(),
+			b.pathListRoles(),
+			b.pathRole(),
+			b.pathRoleTag(),
+			b.pathConfigClient(),
+			b.pathConfigCertificate(),
+			b.pathConfigIdentity(),
+			b.pathConfigSts(),
+			b.pathListSts(),
+			b.pathConfigTidyRoletagBlacklist(),
+			b.pathConfigTidyIdentityWhitelist(),
+			b.pathListCertificates(),
+			b.pathListRoletagBlacklist(),
+			b.pathRoletagBlacklist(),
+			b.pathTidyRoletagBlacklist(),
+			b.pathListIdentityWhitelist(),
+			b.pathIdentityWhitelist(),
+			b.pathTidyIdentityWhitelist(),
 		},
-		Invalidate:  b.invalidate,
-		BackendType: logical.TypeCredential,
+		Invalidate:     b.invalidate,
+		InitializeFunc: b.initialize,
+		BackendType:    logical.TypeCredential,
+		Clean:          b.cleanup,
 	}
+
+	b.partitionToRegionMap = generatePartitionToRegionMap()
 
 	return b, nil
 }
@@ -149,8 +167,8 @@ func (b *backend) periodicFunc(ctx context.Context, req *logical.Request) error 
 	// time matches the nextTidyTime.
 	if b.nextTidyTime.IsZero() || !time.Now().Before(b.nextTidyTime) {
 		if b.System().LocalMount() || !b.System().ReplicationState().HasState(consts.ReplicationPerformanceSecondary|consts.ReplicationPerformanceStandby) {
-			// safety_buffer defaults to 180 days for roletag blacklist
-			safety_buffer := 15552000
+			// safetyBuffer defaults to 180 days for roletag blacklist
+			safetyBuffer := 15552000
 			tidyBlacklistConfigEntry, err := b.lockedConfigTidyRoleTags(ctx, req.Storage)
 			if err != nil {
 				return err
@@ -162,12 +180,12 @@ func (b *backend) periodicFunc(ctx context.Context, req *logical.Request) error 
 				if tidyBlacklistConfigEntry.DisablePeriodicTidy {
 					skipBlacklistTidy = true
 				}
-				// overwrite the default safety_buffer with the configured value
-				safety_buffer = tidyBlacklistConfigEntry.SafetyBuffer
+				// overwrite the default safetyBuffer with the configured value
+				safetyBuffer = tidyBlacklistConfigEntry.SafetyBuffer
 			}
 			// tidy role tags if explicitly not disabled
 			if !skipBlacklistTidy {
-				b.tidyBlacklistRoleTag(ctx, req, safety_buffer)
+				b.tidyBlacklistRoleTag(ctx, req, safetyBuffer)
 			}
 		}
 
@@ -200,14 +218,23 @@ func (b *backend) periodicFunc(ctx context.Context, req *logical.Request) error 
 	return nil
 }
 
+func (b *backend) cleanup(ctx context.Context) {
+	if b.upgradeCancelFunc != nil {
+		b.upgradeCancelFunc()
+	}
+}
+
 func (b *backend) invalidate(ctx context.Context, key string) {
-	switch key {
-	case "config/client":
+	switch {
+	case key == "config/client":
 		b.configMutex.Lock()
 		defer b.configMutex.Unlock()
 		b.flushCachedEC2Clients()
 		b.flushCachedIAMClients()
 		b.defaultAWSAccountID = ""
+	case strings.HasPrefix(key, "role"):
+		// TODO: We could make this better
+		b.roleCache.Flush()
 	}
 }
 
@@ -229,20 +256,20 @@ func (b *backend) resolveArnToRealUniqueId(ctx context.Context, s logical.Storag
 	// partition, and passing that region back back to the SDK, so that the SDK can figure out the
 	// proper partition from the arbitrary region we passed in to look up the endpoint.
 	// Sigh
-	region := getAnyRegionForAwsPartition(entity.Partition)
+	region := b.partitionToRegionMap[entity.Partition]
 	if region == nil {
 		return "", fmt.Errorf("unable to resolve partition %q to a region", entity.Partition)
 	}
 	iamClient, err := b.clientIAM(ctx, s, region.ID(), entity.AccountNumber)
 	if err != nil {
-		return "", awsutil.AppendLogicalError(err)
+		return "", awsutil.AppendAWSError(err)
 	}
 
 	switch entity.Type {
 	case "user":
 		userInfo, err := iamClient.GetUser(&iam.GetUserInput{UserName: &entity.FriendlyName})
 		if err != nil {
-			return "", awsutil.AppendLogicalError(err)
+			return "", awsutil.AppendAWSError(err)
 		}
 		if userInfo == nil {
 			return "", fmt.Errorf("got nil result from GetUser")
@@ -251,7 +278,7 @@ func (b *backend) resolveArnToRealUniqueId(ctx context.Context, s logical.Storag
 	case "role":
 		roleInfo, err := iamClient.GetRole(&iam.GetRoleInput{RoleName: &entity.FriendlyName})
 		if err != nil {
-			return "", awsutil.AppendLogicalError(err)
+			return "", awsutil.AppendAWSError(err)
 		}
 		if roleInfo == nil {
 			return "", fmt.Errorf("got nil result from GetRole")
@@ -260,7 +287,7 @@ func (b *backend) resolveArnToRealUniqueId(ctx context.Context, s logical.Storag
 	case "instance-profile":
 		profileInfo, err := iamClient.GetInstanceProfile(&iam.GetInstanceProfileInput{InstanceProfileName: &entity.FriendlyName})
 		if err != nil {
-			return "", awsutil.AppendLogicalError(err)
+			return "", awsutil.AppendAWSError(err)
 		}
 		if profileInfo == nil {
 			return "", fmt.Errorf("got nil result from GetInstanceProfile")
@@ -273,18 +300,26 @@ func (b *backend) resolveArnToRealUniqueId(ctx context.Context, s logical.Storag
 
 // Adapted from https://docs.aws.amazon.com/sdk-for-go/api/aws/endpoints/
 // the "Enumerating Regions and Endpoint Metadata" section
-func getAnyRegionForAwsPartition(partitionId string) *endpoints.Region {
+func generatePartitionToRegionMap() map[string]*endpoints.Region {
+	partitionToRegion := make(map[string]*endpoints.Region)
+
 	resolver := endpoints.DefaultResolver()
 	partitions := resolver.(endpoints.EnumPartitions).Partitions()
 
 	for _, p := range partitions {
-		if p.ID() == partitionId {
-			for _, r := range p.Regions() {
-				return &r
+		// For most partitions, it's fine to choose a single region randomly.
+		// However, for the "aws" partition, it's best to choose "us-east-1"
+		// because it is always enabled (and enabled for STS) by default.
+		for _, r := range p.Regions() {
+			if p.ID() == "aws" && r.ID() != "us-east-1" {
+				continue
 			}
+			partitionToRegion[p.ID()] = &r
+			break
 		}
 	}
-	return nil
+
+	return partitionToRegion
 }
 
 const backendHelp = `
