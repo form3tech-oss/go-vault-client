@@ -2,11 +2,13 @@ package vaultclient
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 )
 
+var vaultClientMux sync.RWMutex
 var vaultClient *api.Client
 
 func Configure(config *Config) error {
@@ -19,6 +21,8 @@ func Configure(config *Config) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating vault client")
 	}
+	vaultClientMux.Lock()
+	defer vaultClientMux.Unlock()
 	vaultClient = client
 	return nil
 }
@@ -34,10 +38,14 @@ func ConfigureDefault() error {
 
 // Onus is on the caller to make sure the client has been configured
 func GetClient() *api.Client {
+	vaultClientMux.RLock()
+	defer vaultClientMux.RUnlock()
 	return vaultClient
 }
 
 func Read(path string) (*api.Secret, error) {
+	vaultClientMux.RLock()
+	defer vaultClientMux.RUnlock()
 	return vaultClient.Logical().Read(path)
 }
 
@@ -58,6 +66,8 @@ func ReadData(path string) (map[string]interface{}, error) {
 }
 
 func Write(path string, data map[string]interface{}) (*api.Secret, error) {
+	vaultClientMux.RLock()
+	defer vaultClientMux.RUnlock()
 	return vaultClient.Logical().Write(path, data)
 }
 
@@ -78,6 +88,9 @@ func WriteData(path string, data map[string]interface{}) (map[string]interface{}
 }
 
 func List(path string) (*api.Secret, error) {
+	vaultClientMux.RLock()
+	defer vaultClientMux.RUnlock()
+
 	return vaultClient.Logical().List(path)
 }
 
@@ -108,6 +121,8 @@ func ListData(path string) ([]interface{}, error) {
 }
 
 func Delete(path string) (*api.Secret, error) {
+	vaultClientMux.RLock()
+	defer vaultClientMux.RUnlock()
 	return vaultClient.Logical().Delete(path)
 }
 
