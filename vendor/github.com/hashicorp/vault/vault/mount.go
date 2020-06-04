@@ -12,11 +12,11 @@ import (
 
 	uuid "github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/vault/builtin/plugin"
-	"github.com/hashicorp/vault/helper/consts"
-	"github.com/hashicorp/vault/helper/jsonutil"
 	"github.com/hashicorp/vault/helper/namespace"
-	"github.com/hashicorp/vault/helper/strutil"
-	"github.com/hashicorp/vault/logical"
+	"github.com/hashicorp/vault/sdk/helper/consts"
+	"github.com/hashicorp/vault/sdk/helper/jsonutil"
+	"github.com/hashicorp/vault/sdk/helper/strutil"
+	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/copystructure"
 )
 
@@ -209,19 +209,20 @@ func (t *MountTable) sortEntriesByPathDepth() *MountTable {
 
 // MountEntry is used to represent a mount table entry
 type MountEntry struct {
-	Table            string            `json:"table"`              // The table it belongs to
-	Path             string            `json:"path"`               // Mount Path
-	Type             string            `json:"type"`               // Logical backend Type
-	Description      string            `json:"description"`        // User-provided description
-	UUID             string            `json:"uuid"`               // Barrier view UUID
-	BackendAwareUUID string            `json:"backend_aware_uuid"` // UUID that can be used by the backend as a helper when a consistent value is needed outside of storage.
-	Accessor         string            `json:"accessor"`           // Unique but more human-friendly ID. Does not change, not used for any sensitive things (like as a salt, which the UUID sometimes is).
-	Config           MountConfig       `json:"config"`             // Configuration related to this mount (but not backend-derived)
-	Options          map[string]string `json:"options"`            // Backend options
-	Local            bool              `json:"local"`              // Local mounts are not replicated or affected by replication
-	SealWrap         bool              `json:"seal_wrap"`          // Whether to wrap CSPs
-	Tainted          bool              `json:"tainted,omitempty"`  // Set as a Write-Ahead flag for unmount/remount
-	NamespaceID      string            `json:"namespace_id"`
+	Table                 string            `json:"table"`                   // The table it belongs to
+	Path                  string            `json:"path"`                    // Mount Path
+	Type                  string            `json:"type"`                    // Logical backend Type
+	Description           string            `json:"description"`             // User-provided description
+	UUID                  string            `json:"uuid"`                    // Barrier view UUID
+	BackendAwareUUID      string            `json:"backend_aware_uuid"`      // UUID that can be used by the backend as a helper when a consistent value is needed outside of storage.
+	Accessor              string            `json:"accessor"`                // Unique but more human-friendly ID. Does not change, not used for any sensitive things (like as a salt, which the UUID sometimes is).
+	Config                MountConfig       `json:"config"`                  // Configuration related to this mount (but not backend-derived)
+	Options               map[string]string `json:"options"`                 // Backend options
+	Local                 bool              `json:"local"`                   // Local mounts are not replicated or affected by replication
+	SealWrap              bool              `json:"seal_wrap"`               // Whether to wrap CSPs
+	ExternalEntropyAccess bool              `json:"external_entropy_access"` // Whether to allow external entropy source access
+	Tainted               bool              `json:"tainted,omitempty"`       // Set as a Write-Ahead flag for unmount/remount
+	NamespaceID           string            `json:"namespace_id"`
 
 	// namespace contains the populated namespace
 	namespace *namespace.Namespace
@@ -373,7 +374,24 @@ func (c *Core) mount(ctx context.Context, entry *MountEntry) error {
 			return logical.CodedError(403, fmt.Sprintf("mount type of %q is not mountable", entry.Type))
 		}
 	}
-	return c.mountInternal(ctx, entry, MountTableUpdateStorage)
+
+	// Mount internally
+	if err := c.mountInternal(ctx, entry, MountTableUpdateStorage); err != nil {
+		return err
+	}
+
+	// Re-evaluate filtered paths
+	if err := runFilteredPathsEvaluation(ctx, c); err != nil {
+		c.logger.Error("failed to evaluate filtered paths", "error", err)
+
+		// We failed to evaluate filtered paths so we are undoing the mount operation
+		if unmountInternalErr := c.unmountInternal(ctx, entry.Path, MountTableUpdateStorage); unmountInternalErr != nil {
+			c.logger.Error("failed to unmount", "error", unmountInternalErr)
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (c *Core) mountInternal(ctx context.Context, entry *MountEntry, updateStorage bool) error {
@@ -442,8 +460,8 @@ func (c *Core) mountInternal(ctx context.Context, entry *MountEntry, updateStora
 	viewPath := entry.ViewPath()
 	view := NewBarrierView(c.barrier, viewPath)
 
-	// Singleton mounts cannot be filtered on a per-secondary basis
-	// from replication
+	// Singleton mounts cannot be filtered manually on a per-secondary basis
+	// from replication.
 	if strutil.StrListContains(singletonMounts, entry.Type) {
 		addFilterablePath(c, viewPath)
 	}
@@ -511,6 +529,17 @@ func (c *Core) mountInternal(ctx context.Context, entry *MountEntry, updateStora
 		return err
 	}
 
+	if !nilMount {
+		// restore the original readOnlyErr, so we can write to the view in
+		// Initialize() if necessary
+		view.setReadOnlyErr(origReadOnlyErr)
+		// initialize, using the core's active context.
+		err := backend.Initialize(c.activeContext, &logical.InitializationRequest{Storage: view})
+		if err != nil {
+			return err
+		}
+	}
+
 	if c.logger.IsInfo() {
 		c.logger.Info("successful mount", "namespace", entry.Namespace().Path, "path", entry.Path, "type", entry.Type)
 	}
@@ -531,7 +560,18 @@ func (c *Core) unmount(ctx context.Context, path string) error {
 			return fmt.Errorf("cannot unmount %q", path)
 		}
 	}
-	return c.unmountInternal(ctx, path, MountTableUpdateStorage)
+
+	// Unmount mount internally
+	if err := c.unmountInternal(ctx, path, MountTableUpdateStorage); err != nil {
+		return err
+	}
+
+	// Re-evaluate filtered paths
+	if err := runFilteredPathsEvaluation(ctx, c); err != nil {
+		// Even we failed to evaluate filtered paths, the unmount operation was still successful
+		c.logger.Error("failed to evaluate filtered paths", "error", err)
+	}
+	return nil
 }
 
 func (c *Core) unmountInternal(ctx context.Context, path string, updateStorage bool) error {
@@ -589,9 +629,18 @@ func (c *Core) unmountInternal(ctx context.Context, path string, updateStorage b
 	switch {
 	case !updateStorage:
 		// Don't attempt to clear data, replication will handle this
-	case c.IsDRSecondary(), entry.Local, !c.ReplicationState().HasState(consts.ReplicationPerformanceSecondary):
+	case c.IsDRSecondary():
+		// If we are a dr secondary we want to clear the view, but the provided
+		// view is marked as read only. We use the barrier here to get around
+		// it.
+		if err := logical.ClearViewWithLogging(ctx, NewBarrierView(c.barrier, viewPath), c.logger.Named("secrets.deletion").With("namespace", ns.ID, "path", path)); err != nil {
+			c.logger.Error("failed to clear view for path being unmounted", "error", err, "path", path)
+			return err
+		}
+
+	case entry.Local, !c.ReplicationState().HasState(consts.ReplicationPerformanceSecondary):
 		// Have writable storage, remove the whole thing
-		if err := logical.ClearView(ctx, view); err != nil {
+		if err := logical.ClearViewWithLogging(ctx, view, c.logger.Named("secrets.deletion").With("namespace", ns.ID, "path", path)); err != nil {
 			c.logger.Error("failed to clear view for path being unmounted", "error", err, "path", path)
 			return err
 		}
@@ -687,9 +736,10 @@ func (c *Core) taintMountEntry(ctx context.Context, path string, updateStorage b
 	return nil
 }
 
-// remountForce takes a copy of the mount entry for the path and fully unmounts
-// and remounts the backend to pick up any changes, such as filtered paths
-func (c *Core) remountForce(ctx context.Context, path string) error {
+// remountForceInternal takes a copy of the mount entry for the path and fully unmounts
+// and remounts the backend to pick up any changes, such as filtered paths.
+// Should be only used for internal usage.
+func (c *Core) remountForceInternal(ctx context.Context, path string, updateStorage bool) error {
 	me := c.router.MatchingMountEntry(ctx, path)
 	if me == nil {
 		return fmt.Errorf("cannot find mount for path %q", path)
@@ -700,14 +750,25 @@ func (c *Core) remountForce(ctx context.Context, path string) error {
 		return err
 	}
 
-	if err := c.unmount(ctx, path); err != nil {
+	if err := c.unmountInternal(ctx, path, updateStorage); err != nil {
 		return err
 	}
-	return c.mount(ctx, me)
+
+	// Mount internally
+	if err := c.mountInternal(ctx, me, updateStorage); err != nil {
+		return err
+	}
+
+	// Re-evaluate filtered paths
+	if err := runFilteredPathsEvaluation(ctx, c); err != nil {
+		c.logger.Error("failed to evaluate filtered paths", "error", err)
+		return err
+	}
+	return nil
 }
 
 // Remount is used to remount a path at a new mount point.
-func (c *Core) remount(ctx context.Context, src, dst string) error {
+func (c *Core) remount(ctx context.Context, src, dst string, updateStorage bool) error {
 	ns, err := namespace.FromContext(ctx)
 	if err != nil {
 		return err
@@ -746,7 +807,7 @@ func (c *Core) remount(ctx context.Context, src, dst string) error {
 	}
 
 	// Mark the entry as tainted
-	if err := c.taintMountEntry(ctx, src, true); err != nil {
+	if err := c.taintMountEntry(ctx, src, updateStorage); err != nil {
 		return err
 	}
 
@@ -758,12 +819,13 @@ func (c *Core) remount(ctx context.Context, src, dst string) error {
 	if !c.IsDRSecondary() {
 		// Invoke the rollback manager a final time
 		rCtx := namespace.ContextWithNamespace(c.activeContext, ns)
-		if err := c.rollback.Rollback(rCtx, src); err != nil {
-			return err
+		if c.rollback != nil {
+			if err := c.rollback.Rollback(rCtx, src); err != nil {
+				return err
+			}
 		}
 
-		entry := c.router.MatchingMountEntry(ctx, src)
-		if entry == nil {
+		if entry := c.router.MatchingMountEntry(ctx, src); entry == nil {
 			return fmt.Errorf("no matching mount at %q", src)
 		}
 
@@ -1047,7 +1109,7 @@ func (c *Core) setupMounts(ctx context.Context) error {
 		// Create a barrier view using the UUID
 		view := NewBarrierView(c.barrier, barrierPath)
 
-		// Singleton mounts cannot be filtered on a per-secondary basis
+		// Singleton mounts cannot be filtered manually on a per-secondary basis
 		// from replication
 		if strutil.StrListContains(singletonMounts, entry.Type) {
 			addFilterablePath(c, barrierPath)
@@ -1122,6 +1184,23 @@ func (c *Core) setupMounts(ctx context.Context) error {
 			return errLoadMountsFailed
 		}
 
+		// Initialize
+		if !nilMount {
+			// Bind locally
+			localEntry := entry
+			c.postUnsealFuncs = append(c.postUnsealFuncs, func() {
+				if backend == nil {
+					c.logger.Error("skipping initialization on nil backend", "path", localEntry.Path)
+					return
+				}
+
+				err := backend.Initialize(ctx, &logical.InitializationRequest{Storage: view})
+				if err != nil {
+					c.logger.Error("failed to initialize mount entry", "path", localEntry.Path, "error", err)
+				}
+			})
+		}
+
 		if c.logger.IsInfo() {
 			c.logger.Info("successfully mounted backend", "type", entry.Type, "path", entry.Path)
 		}
@@ -1157,7 +1236,7 @@ func (c *Core) unloadMounts(ctx context.Context) error {
 	}
 
 	c.mounts = nil
-	c.router = NewRouter()
+	c.router.reset()
 	c.systemBarrierView = nil
 	return nil
 }
@@ -1199,6 +1278,7 @@ func (c *Core) newLogicalBackend(ctx context.Context, entry *MountEntry, sysView
 		BackendUUID: entry.BackendAwareUUID,
 	}
 
+	ctx = context.WithValue(ctx, "core_number", c.coreNumber)
 	b, err := f(ctx, config)
 	if err != nil {
 		return nil, err
@@ -1206,17 +1286,9 @@ func (c *Core) newLogicalBackend(ctx context.Context, entry *MountEntry, sysView
 	if b == nil {
 		return nil, fmt.Errorf("nil backend of type %q returned from factory", t)
 	}
-	return b, nil
-}
+	addLicenseCallback(c, b)
 
-// mountEntrySysView creates a logical.SystemView from global and
-// mount-specific entries; because this should be called when setting
-// up a mountEntry, it doesn't check to ensure that me is not nil
-func (c *Core) mountEntrySysView(entry *MountEntry) logical.SystemView {
-	return dynamicSystemView{
-		core:       c,
-		mountEntry: entry,
-	}
+	return b, nil
 }
 
 // defaultMountTable creates a default mount table
