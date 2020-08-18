@@ -1,6 +1,6 @@
 module github.com/form3tech-oss/go-vault-client/v4
 
-go 1.13
+go 1.14
 
 replace github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient => ./pkg/vaultclient
 
