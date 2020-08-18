@@ -9,7 +9,6 @@ replace (
 
 require (
 	github.com/aws/aws-sdk-go v1.34.6
-	github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/consul/sdk v0.6.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-uuid v1.0.2
