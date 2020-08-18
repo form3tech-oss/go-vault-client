@@ -1,6 +1,7 @@
-package vaultclient
+package test
 
 import (
+	"github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient"
 	"os"
 	"strings"
 	"testing"
@@ -29,8 +30,8 @@ func TestAppRoleAuth(t *testing.T) {
 	}
 	roleID := resp.Data["role_id"].(string)
 
-	config := BaseConfig()
-	config.AuthType = AppRole
+	config := vaultclient.BaseConfig()
+	config.AuthType = vaultclient.AppRole
 	config.AppRoleId = roleID
 	config.AppRoleSecretId = secretID
 
@@ -41,7 +42,7 @@ func TestAppRoleAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v, err := NewVaultAuth(config)
+	v, err := vaultclient.NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}

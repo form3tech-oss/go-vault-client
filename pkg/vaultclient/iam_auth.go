@@ -27,8 +27,8 @@ func (v *iamAuth) login(session *session.Session) (*api.Secret, error) {
 
 func (v *iamAuth) loginWithFallback(session *session.Session) (*api.Secret, error) {
 	creds := session.Config.Credentials
-	configuredRegion := os.Getenv(envVarAwsRegion)
-	stsSession, err := createSession(creds, configuredRegion)
+	configuredRegion := os.Getenv(EnvVarAwsRegion)
+	stsSession, err := CreateSession(creds, configuredRegion)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,8 @@ func generateLoginData(stsSession *session.Session) (map[string]interface{}, err
 	return loginData, nil
 }
 
-func createSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
+// TODO: had to export createSession in order to import in the tests, is that ok?
+func CreateSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
 	return createSessionWithResolver(creds, configuredRegion, endpointSigningResolver)
 }
 
@@ -99,7 +100,7 @@ func endpointSigningResolver(service, region string, optFns ...func(*endpoints.O
 		return defaultEndpoint, err
 	}
 	defaultEndpoint.SigningName = service
-	stsRegion, present := os.LookupEnv(envVarStsAwsRegion)
+	stsRegion, present := os.LookupEnv(EnvVarStsAwsRegion)
 	if present {
 		defaultEndpoint.SigningRegion = stsRegion
 		defaultEndpoint.URL = fmt.Sprintf("https://%s.%v.amazonaws.com", service, stsRegion)

@@ -1,6 +1,7 @@
-package vaultclient
+package test
 
 import (
+	"github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient"
 	"os"
 	"testing"
 
@@ -12,47 +13,47 @@ func TestConfigure(t *testing.T) {
 	vault, deferFunc := newVault(t)
 	defer deferFunc()
 
-	cfg := &Config{
-		AuthType: Token,
+	cfg := &vaultclient.Config{
+		AuthType: vaultclient.Token,
 		Token:    vault.rootToken,
 	}
 
-	err := Configure(cfg)
+	err := vaultclient.Configure(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func (suite *DataClientTestSuite) TestReadWriteData() {
-	data, err := ReadData("secret/foo")
+	data, err := vaultclient.ReadData("secret/foo")
 
 	suite.Nil(err)
 	suite.Nilf(data, "expected 'secret/foo' to be empty path, got '%v'", data)
 
 	testData := map[string]interface{}{"foo": "bar"}
 
-	data, err = WriteData("secret/foo", testData)
+	data, err = vaultclient.WriteData("secret/foo", testData)
 	suite.Nil(err)
 	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
-	data, err = ReadData("secret/foo")
+	data, err = vaultclient.ReadData("secret/foo")
 	suite.Nil(err)
 
 	suite.Equalf(data, testData, "Expected data (%s) to be equal to testData (%s)", data, testData)
 }
 
 func (suite *DataClientTestSuite) TestListData() {
-	data, err := ReadData("secret/foo")
+	data, err := vaultclient.ReadData("secret/foo")
 	suite.Nil(err)
 	suite.Nilf(data, "expected 'secret/foo' to be empty path, got '%v'", data)
 
 	testData := map[string]interface{}{"foo": "bar"}
 
-	data, err = WriteData("secret/foo", testData)
+	data, err = vaultclient.WriteData("secret/foo", testData)
 	suite.Nil(err)
 	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
-	listData, err := ListData("secret")
+	listData, err := vaultclient.ListData("secret")
 	suite.Nil(err)
 
 	suite.Lenf(listData, 1, "Expected length of keys to be 1, got %d. (%s)", len(listData), listData)
@@ -64,26 +65,26 @@ func (suite *DataClientTestSuite) TestListData() {
 }
 
 func (suite *DataClientTestSuite) TestDeleteData() {
-	data, err := ReadData("secret/foo")
+	data, err := vaultclient.ReadData("secret/foo")
 	suite.Nil(err)
 	suite.Nilf(data, "expected 'secret/foo' to be empty path, got '%v'", data)
 
 	testData := map[string]interface{}{"foo": "bar"}
 
-	data, err = WriteData("secret/foo", testData)
+	data, err = vaultclient.WriteData("secret/foo", testData)
 	suite.Nil(err)
 	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
-	data, err = ReadData("secret/foo")
+	data, err = vaultclient.ReadData("secret/foo")
 	suite.Nil(err)
 
 	suite.Equalf(data, testData, "Expected data (%s) to be equal to testData (%s)", data, testData)
 
-	data, err = DeleteData("secret/foo")
+	data, err = vaultclient.DeleteData("secret/foo")
 	suite.Nil(err)
 	suite.Nilf(data, "Expected data (%s) to be nil", data)
 
-	data, err = ReadData("secret/foo")
+	data, err = vaultclient.ReadData("secret/foo")
 	suite.Nil(err)
 	suite.Nilf(data, "Expected data (%s) to be nil", data)
 }
@@ -102,8 +103,8 @@ func (suite *DataClientTestSuite) SetupTest() {
 	os.Setenv("VAULT_ADDR", vault.address)
 	defer os.Unsetenv("VAULT_ADDR")
 
-	config := BaseConfig()
-	config.AuthType = Token
+	config := vaultclient.BaseConfig()
+	config.AuthType = vaultclient.Token
 	config.Token = vault.rootToken
 
 	err := config.ConfigureTLS(&api.TLSConfig{
@@ -111,7 +112,7 @@ func (suite *DataClientTestSuite) SetupTest() {
 	})
 	suite.Nil(err)
 
-	err = Configure(config)
+	err = vaultclient.Configure(config)
 	suite.Nil(err)
 }
 

@@ -1,6 +1,7 @@
-package vaultclient
+package test
 
 import (
+	"github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient"
 	"os"
 	"strings"
 	"testing"
@@ -17,8 +18,8 @@ func TestTokenAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config := BaseConfig()
-	config.AuthType = Token
+	config := vaultclient.BaseConfig()
+	config.AuthType = vaultclient.Token
 	config.Token = configuredVault.rootToken
 
 	err = config.ConfigureTLS(&api.TLSConfig{
@@ -28,7 +29,7 @@ func TestTokenAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v, err := NewVaultAuth(config)
+	v, err := vaultclient.NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,8 @@
-package vaultclient
+package test
 
 import (
 	"fmt"
+	"github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient"
 	"os"
 	"testing"
 
@@ -55,6 +56,10 @@ func newVaultConfiguredForIamAuth(t *testing.T, leaseTtl, maxLeaseTtl string) (*
 		"auth_type": "iam",
 		"policies":  "foowriter",
 		// Retain thru the account number of the given arn and wildcard the rest.
+		// TODO: fix failing test:
+		// --- FAIL: TestIamAuthWithGlobalEndpointClient (2.06s)
+		// panic: runtime error: slice bounds out of range [:25] with length 0 [recovered]
+		// panic: runtime error: slice bounds out of range [:25] with length 0
 		"bound_iam_principal_arn": os.Getenv(envVarAwsTestRoleArn)[:25] + "*",
 	}); err != nil {
 		fmt.Println(err)
@@ -179,7 +184,7 @@ func newVault(t *testing.T) (*configuredVault, func()) {
 
 func setAwsEnvCreds() error {
 	creds := credentials.NewStaticCredentials(os.Getenv(envVarAwsTestAccessKey), os.Getenv(envVarAwsTestSecretKey), "")
-	sess, err := createSession(creds, os.Getenv(envVarAwsRegion))
+	sess, err := vaultclient.CreateSession(creds, os.Getenv(vaultclient.EnvVarAwsRegion))
 	if err != nil {
 		return err
 	}

@@ -15,8 +15,9 @@ const (
 	Token AuthType = iota + 1
 	Iam
 	AppRole
-	envVarAwsRegion    = "AWS_REGION"
-	envVarStsAwsRegion = "STS_AWS_REGION"
+	// TODO: had to export envVarAwsRegion & envVarStsAwsRegion in order to import in the tests, is that ok?
+	EnvVarAwsRegion    = "AWS_REGION"
+	EnvVarStsAwsRegion = "STS_AWS_REGION"
 )
 
 type iamAuth struct {
@@ -53,7 +54,8 @@ type Auth struct {
 }
 
 var (
-	expirationWindow = time.Second * 10
+	// TODO: had to export expirationWindow in order to import in the tests, is that ok?
+	ExpirationWindow = time.Second * 10
 )
 
 type VaultAuth interface {
@@ -159,7 +161,7 @@ func (v *Auth) IsTokenExpired() bool {
 		return true
 	}
 
-	return v.expiry.Before(time.Now().Add(expirationWindow).UTC())
+	return v.expiry.Before(time.Now().Add(ExpirationWindow).UTC())
 }
 
 func (v *iamAuth) VaultClient() (*api.Client, error) {

@@ -1,7 +1,8 @@
-package vaultclient
+package test
 
 import (
 	"fmt"
+	"github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient"
 	"os"
 	"strings"
 	"testing"
@@ -61,7 +62,7 @@ func TestIamAuthWithRegionalEndpointClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := os.Setenv(envVarStsAwsRegion, awsTestRegion); err != nil {
+	if err := os.Setenv(vaultclient.EnvVarStsAwsRegion, awsTestRegion); err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
@@ -87,7 +88,7 @@ func TestIamAuthWithFallbackEndpointClient(t *testing.T) {
 		fallback to the global endpoint.
 	*/
 	configuredVault, destroy := newVaultConfiguredForIamAuth(t, "1h", "1h")
-	if err := os.Setenv(envVarStsAwsRegion, awsTestRegion); err != nil {
+	if err := os.Setenv(vaultclient.EnvVarStsAwsRegion, awsTestRegion); err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
@@ -119,8 +120,8 @@ func testIamAuthClient(t *testing.T, configuredVault *configuredVault, path stri
 		t.Fatal(err)
 	}
 
-	config := BaseConfig()
-	config.AuthType = Iam
+	config := vaultclient.BaseConfig()
+	config.AuthType = vaultclient.Iam
 	config.IamRole = "test"
 
 	err = config.ConfigureTLS(&api.TLSConfig{
@@ -130,7 +131,7 @@ func testIamAuthClient(t *testing.T, configuredVault *configuredVault, path stri
 		t.Fatal(err)
 	}
 
-	v, err := NewVaultAuth(config)
+	v, err := vaultclient.NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +152,7 @@ func testIamAuthClient(t *testing.T, configuredVault *configuredVault, path stri
 
 func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 	configuredVault, destroy := newVaultConfiguredForIamAuth(t, "10s", "10s")
-	if err := os.Setenv(envVarStsAwsRegion, awsTestRegion); err != nil {
+	if err := os.Setenv(vaultclient.EnvVarStsAwsRegion, awsTestRegion); err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
@@ -178,8 +179,8 @@ func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config := BaseConfig()
-	config.AuthType = Iam
+	config := vaultclient.BaseConfig()
+	config.AuthType = vaultclient.Iam
 	config.IamRole = "test"
 
 	err = config.ConfigureTLS(&api.TLSConfig{
@@ -189,7 +190,7 @@ func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v, err := NewVaultAuth(config)
+	v, err := vaultclient.NewVaultAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +206,7 @@ func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 	})
 
 	// now wait out the expiration window
-	time.Sleep(expirationWindow + time.Second)
+	time.Sleep(vaultclient.ExpirationWindow + time.Second)
 
 	result, err := v.VaultClientOrPanic().Logical().Read("secret/foo")
 	if err != nil {
