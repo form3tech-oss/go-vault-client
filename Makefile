@@ -8,8 +8,7 @@ default: test test-cmd
 
 test:
 	@echo "executing tests..."
-	# TODO: @go test -count 1 -v -race -timeout 20m ./pkg/vaultclient doesn't work anymore due to "go: directory pkg/vaultclient is outside main module"
-	cd ./pkg/test; go test -count 1 -v -race -timeout 20m ./...; cd -
+	cd ./test; go test -count 1 -v -race -timeout 20m ./...; cd -
 
 test-cmd:
 	docker-compose up -d && sleep 1 && go test -count 1 -v -race -timeout 1m ./cmd/...; docker-compose down

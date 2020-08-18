@@ -5,7 +5,7 @@ go 1.14
 replace github.com/hashicorp/vault/api => github.com/hashicorp/vault/api v1.0.5-0.20200817232951-d7307fcdfed7
 
 // TODO: temporary replace?
-replace github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient => ../vaultclient
+replace github.com/form3tech-oss/go-vault-client/v4/pkg/vaultclient => ./../pkg/vaultclient
 
 require (
 	github.com/aws/aws-sdk-go v1.34.6
