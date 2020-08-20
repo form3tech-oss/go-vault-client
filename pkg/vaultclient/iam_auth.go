@@ -70,7 +70,6 @@ func generateLoginData(stsSession *session.Session) (map[string]interface{}, err
 	return loginData, nil
 }
 
-// TODO: had to export createSession in order to import in the tests, is that ok?
 func CreateSession(creds *credentials.Credentials, configuredRegion string) (*session.Session, error) {
 	return createSessionWithResolver(creds, configuredRegion, endpointSigningResolver)
 }

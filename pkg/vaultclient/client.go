@@ -15,7 +15,6 @@ const (
 	Token AuthType = iota + 1
 	Iam
 	AppRole
-	// TODO: had to export envVarAwsRegion & envVarStsAwsRegion in order to import in the tests, is that ok?
 	EnvVarAwsRegion    = "AWS_REGION"
 	EnvVarStsAwsRegion = "STS_AWS_REGION"
 )
