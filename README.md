@@ -80,3 +80,11 @@ if err != nil {
 // client can be used here
 
 ```
+
+## Tests
+Tests in the repository resides in own module `module github.com/form3tech-oss/go-vault-client/v4/pkg/test`. The reason behind is to isolate the dependency from `hashicorp/auth` package solely to the scope of tests.
+
+According to the hashicorp/vault maintainers, only `api` and `sdk` packages are eligible to be imported. Other packages are considered `internal` and shouldn't be imported. See [thread](https://github.com/hashicorp/vault/issues/9575#issuecomment-665013482).
+> No one should be importing github.com/hashicorp/vault, only the api and sdk modules. The top-level vault module is not intended to be a dependency for other projects, we're using go.mod solely to manage our own dependencies here.
+
+Isolating tests dependency within own module slims down `vaulclient`'s dependencies and ultimately `vaultclient` package depends only on `hashicorp/vault/{api,sdk}`. See the [PR](https://github.com/form3tech-oss/go-vault-client/pull/23).
