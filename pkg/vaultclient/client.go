@@ -15,8 +15,8 @@ const (
 	Token AuthType = iota + 1
 	Iam
 	AppRole
-	envVarAwsRegion    = "AWS_REGION"
-	envVarStsAwsRegion = "STS_AWS_REGION"
+	EnvVarAwsRegion    = "AWS_REGION"
+	EnvVarStsAwsRegion = "STS_AWS_REGION"
 )
 
 type iamAuth struct {
