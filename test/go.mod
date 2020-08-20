@@ -6,7 +6,7 @@ replace github.com/hashicorp/vault/api => github.com/hashicorp/vault/api v1.0.5-
 
 require (
 	github.com/aws/aws-sdk-go v1.34.7
-	github.com/form3tech-oss/go-vault-client/v4 v4.1.3-0.20200819065112-0a994eadfe51
+	github.com/form3tech-oss/go-vault-client/v4 v4.1.3-0.20200820092125-e804702f6ad4
 	github.com/hashicorp/consul/sdk v0.6.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-memdb v1.0.4 // indirect
