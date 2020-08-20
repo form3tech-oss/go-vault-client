@@ -54,8 +54,7 @@ type Auth struct {
 }
 
 var (
-	// TODO: had to export expirationWindow in order to import in the tests, is that ok?
-	ExpirationWindow = time.Second * 10
+	expirationWindow = time.Second * 10
 )
 
 type VaultAuth interface {
@@ -161,7 +160,7 @@ func (v *Auth) IsTokenExpired() bool {
 		return true
 	}
 
-	return v.expiry.Before(time.Now().Add(ExpirationWindow).UTC())
+	return v.expiry.Before(time.Now().Add(expirationWindow).UTC())
 }
 
 func (v *iamAuth) VaultClient() (*api.Client, error) {

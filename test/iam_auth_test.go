@@ -205,8 +205,8 @@ func TestExpiredIamTokenGetsRenewed(t *testing.T) {
 		}
 	})
 
-	// now wait out the expiration window
-	time.Sleep(vaultclient.ExpirationWindow + time.Second)
+	// now wait out the expiration window (slightly longer that vaultclient.expirationWindow const)
+	time.Sleep(time.Second * 11)
 
 	result, err := v.VaultClientOrPanic().Logical().Read("secret/foo")
 	if err != nil {
