@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -19,6 +18,13 @@ const (
 	EnvVarAwsRegion    = "AWS_REGION"
 	EnvVarStsAwsRegion = "STS_AWS_REGION"
 )
+
+type k8sAuth struct {
+	client *api.Client
+	role   string
+	path   string
+	auth   *Auth
+}
 
 type iamAuth struct {
 	role   string
@@ -146,28 +152,15 @@ func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 			client: c,
 			role:   cfg.IamRole,
 		}, nil
+	case K8s:
+		return &k8sAuth{
+			client: c,
+			role:   cfg.K8sRole,
+			path:   cfg.K8sPath,
+		}, nil
 
 	}
 	return nil, fmt.Errorf("unknown auth type '%d'", cfg.AuthType)
-}
-
-func (v *iamAuth) getAuth() (*Auth, error) {
-	baseSession := session.Must(session.NewSession())
-
-	resp, err := v.loginWithFallback(baseSession)
-	if err != nil {
-		return nil, err
-	}
-
-	tokenTtl, err := resp.TokenTTL()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Auth{
-		token:  resp.Auth.ClientToken,
-		expiry: time.Now().UTC().Add(tokenTtl),
-	}, nil
 }
 
 func (v *Auth) IsTokenExpired() bool {
@@ -176,27 +169,6 @@ func (v *Auth) IsTokenExpired() bool {
 	}
 
 	return v.expiry.Before(time.Now().Add(expirationWindow).UTC())
-}
-
-func (v *iamAuth) VaultClient() (*api.Client, error) {
-	if !v.auth.IsTokenExpired() {
-		return v.client, nil
-	}
-	var err error
-	v.auth, err = v.getAuth()
-	if err != nil {
-		return nil, err
-	}
-	v.client.SetToken(v.auth.token)
-	return v.client, nil
-}
-
-func (v *iamAuth) VaultClientOrPanic() *api.Client {
-	client, err := v.VaultClient()
-	if err != nil {
-		panic(err)
-	}
-	return client
 }
 
 func (t *tokenAuth) VaultClient() (*api.Client, error) {
