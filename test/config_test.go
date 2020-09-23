@@ -30,6 +30,41 @@ func TestDefaultConfigWhenIamRoleSpecified(t *testing.T) {
 	}
 }
 
+func TestDefaultConfigWhenK8sRoleSpecified(t *testing.T) {
+	defer setEnv("K8S_ROLE", "greatservice")()
+	config := vaultclient.NewDefaultConfig()
+
+	if !strings.EqualFold("greatservice", config.K8sRole) {
+		t.Fatalf("expected k8s role greatservice but got %s", config.K8sRole)
+	}
+
+	if !strings.EqualFold("k8s-greatservice", config.K8sPath) {
+		t.Fatalf("expected k8s path k8s-greatservice but got %s", config.K8sPath)
+	}
+
+	if config.AuthType != vaultclient.K8s {
+		t.Fatalf("expected auth type to be k8s")
+	}
+}
+
+func TestDefaultConfigWhenK8sRoleAndPathSpecified(t *testing.T) {
+	defer setEnv("K8S_ROLE", "myservice")()
+	defer setEnv("K8S_PATH", "kubernetes")()
+	config := vaultclient.NewDefaultConfig()
+
+	if !strings.EqualFold("myservice", config.K8sRole) {
+		t.Fatalf("expected k8s role myservice but got %s", config.K8sRole)
+	}
+
+	if !strings.EqualFold("kubernetes", config.K8sPath) {
+		t.Fatalf("expected k8s path kubernetes but got %s", config.K8sPath)
+	}
+
+	if config.AuthType != vaultclient.K8s {
+		t.Fatalf("expected auth type to be k8s")
+	}
+}
+
 func TestDefaultConfigWhenAppRoleSpecified(t *testing.T) {
 	defer setEnv("VAULT_APP_ROLE", "testrole")()
 	defer setEnv("VAULT_APP_ROLE_ID", "myroleid")()

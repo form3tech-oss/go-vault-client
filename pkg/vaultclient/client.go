@@ -15,6 +15,7 @@ const (
 	Token AuthType = iota + 1
 	Iam
 	AppRole
+	K8s
 	EnvVarAwsRegion    = "AWS_REGION"
 	EnvVarStsAwsRegion = "STS_AWS_REGION"
 )
@@ -45,6 +46,8 @@ type Config struct {
 	AppRole         string
 	AppRoleId       string
 	AppRoleSecretId string
+	K8sRole         string
+	K8sPath         string
 }
 
 type Auth struct {
@@ -90,6 +93,19 @@ func NewDefaultConfig() *Config {
 	if role != "" {
 		config.AuthType = Iam
 		config.IamRole = role
+
+		return config
+	}
+
+	k8sRole := os.Getenv("K8S_ROLE")
+	if k8sRole != "" {
+		config.AuthType = K8s
+		config.K8sRole = k8sRole
+		k8sPath := os.Getenv("K8S_PATH")
+		if k8sPath == "" {
+			k8sPath = fmt.Sprintf("k8s-%s", k8sRole)
+		}
+		config.K8sPath = k8sPath
 
 		return config
 	}
