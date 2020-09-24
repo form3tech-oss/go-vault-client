@@ -46,6 +46,8 @@ func (k *k8sAuth) getAuth() (*Auth, error) {
 }
 
 func (k *k8sAuth) login() (*api.Secret, error) {
+	// this path comes from https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#service-account-admission-controller
+	// which is the path that the kubernetes service account controller mounts the jwt token
 	jwt, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	if err != nil {
 		return nil, err
