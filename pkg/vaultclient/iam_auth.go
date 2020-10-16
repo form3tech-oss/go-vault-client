@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -15,6 +16,46 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/awsutil"
 )
+
+func (v *iamAuth) VaultClientOrPanic() *api.Client {
+	client, err := v.VaultClient()
+	if err != nil {
+		panic(err)
+	}
+	return client
+}
+
+func (v *iamAuth) VaultClient() (*api.Client, error) {
+	if !v.auth.IsTokenExpired() {
+		return v.client, nil
+	}
+	var err error
+	v.auth, err = v.getAuth()
+	if err != nil {
+		return nil, err
+	}
+	v.client.SetToken(v.auth.token)
+	return v.client, nil
+}
+
+func (v *iamAuth) getAuth() (*Auth, error) {
+	baseSession := session.Must(session.NewSession())
+
+	resp, err := v.loginWithFallback(baseSession)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenTtl, err := resp.TokenTTL()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Auth{
+		token:  resp.Auth.ClientToken,
+		expiry: time.Now().UTC().Add(tokenTtl),
+	}, nil
+}
 
 func (v *iamAuth) login(session *session.Session) (*api.Secret, error) {
 	data, err := generateLoginData(session)

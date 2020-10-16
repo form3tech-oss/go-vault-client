@@ -3,7 +3,10 @@ module github.com/form3tech-oss/go-vault-client/v4/pkg/test
 go 1.14
 
 // to fix https://github.com/hashicorp/vault/issues/9575
-replace github.com/hashicorp/vault/api => github.com/hashicorp/vault/api v1.0.5-0.20200817232951-d7307fcdfed7
+replace (
+ github.com/hashicorp/vault/api => github.com/hashicorp/vault/api v1.0.5-0.20200817232951-d7307fcdfed7
+ github.com/form3tech-oss/go-vault-client/v4 => ../
+)
 
 require (
 	github.com/aws/aws-sdk-go v1.34.7

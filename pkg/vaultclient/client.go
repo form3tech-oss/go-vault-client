@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -15,9 +14,17 @@ const (
 	Token AuthType = iota + 1
 	Iam
 	AppRole
+	K8s
 	EnvVarAwsRegion    = "AWS_REGION"
 	EnvVarStsAwsRegion = "STS_AWS_REGION"
 )
+
+type k8sAuth struct {
+	client *api.Client
+	role   string
+	path   string
+	auth   *Auth
+}
 
 type iamAuth struct {
 	role   string
@@ -45,6 +52,8 @@ type Config struct {
 	AppRole         string
 	AppRoleId       string
 	AppRoleSecretId string
+	K8sRole         string
+	K8sPath         string
 }
 
 type Auth struct {
@@ -94,6 +103,19 @@ func NewDefaultConfig() *Config {
 		return config
 	}
 
+	k8sRole := os.Getenv("K8S_ROLE")
+	if k8sRole != "" {
+		config.AuthType = K8s
+		config.K8sRole = k8sRole
+		k8sPath := os.Getenv("K8S_PATH")
+		if k8sPath == "" {
+			k8sPath = fmt.Sprintf("k8s-%s", k8sRole)
+		}
+		config.K8sPath = k8sPath
+
+		return config
+	}
+
 	token := os.Getenv("VAULT_TOKEN")
 	if token != "" {
 		config.AuthType = Token
@@ -130,28 +152,15 @@ func NewVaultAuth(cfg *Config) (VaultAuth, error) {
 			client: c,
 			role:   cfg.IamRole,
 		}, nil
+	case K8s:
+		return &k8sAuth{
+			client: c,
+			role:   cfg.K8sRole,
+			path:   cfg.K8sPath,
+		}, nil
 
 	}
 	return nil, fmt.Errorf("unknown auth type '%d'", cfg.AuthType)
-}
-
-func (v *iamAuth) getAuth() (*Auth, error) {
-	baseSession := session.Must(session.NewSession())
-
-	resp, err := v.loginWithFallback(baseSession)
-	if err != nil {
-		return nil, err
-	}
-
-	tokenTtl, err := resp.TokenTTL()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Auth{
-		token:  resp.Auth.ClientToken,
-		expiry: time.Now().UTC().Add(tokenTtl),
-	}, nil
 }
 
 func (v *Auth) IsTokenExpired() bool {
@@ -160,27 +169,6 @@ func (v *Auth) IsTokenExpired() bool {
 	}
 
 	return v.expiry.Before(time.Now().Add(expirationWindow).UTC())
-}
-
-func (v *iamAuth) VaultClient() (*api.Client, error) {
-	if !v.auth.IsTokenExpired() {
-		return v.client, nil
-	}
-	var err error
-	v.auth, err = v.getAuth()
-	if err != nil {
-		return nil, err
-	}
-	v.client.SetToken(v.auth.token)
-	return v.client, nil
-}
-
-func (v *iamAuth) VaultClientOrPanic() *api.Client {
-	client, err := v.VaultClient()
-	if err != nil {
-		panic(err)
-	}
-	return client
 }
 
 func (t *tokenAuth) VaultClient() (*api.Client, error) {
